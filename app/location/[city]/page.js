@@ -1,333 +1,223 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
-import { graphqlRequest, GET_ALL_JOBS, filterJobsByLocation } from '../../../lib/apollo'
-import JobCard from '../../../components/JobCard'
+import Link from 'next/link'
 
-// City mapping
-const cityMap = {
-  'mumbai': { name: 'Mumbai', state: 'Maharashtra' },
-  'delhi': { name: 'Delhi', state: 'Delhi' },
-  'bangalore': { name: 'Bangalore', state: 'Karnataka' },
-  'pune': { name: 'Pune', state: 'Maharashtra' },
-  'hyderabad': { name: 'Hyderabad', state: 'Telangana' },
-  'chennai': { name: 'Chennai', state: 'Tamil Nadu' },
-  'gurgaon': { name: 'Gurgaon', state: 'Haryana' },
-  'noida': { name: 'Noida', state: 'Uttar Pradesh' },
-  'kolkata': { name: 'Kolkata', state: 'West Bengal' },
-  'ahmedabad': { name: 'Ahmedabad', state: 'Gujarat' },
-  'remote': { name: 'Remote', state: 'Work from Anywhere' }
+const locations = [
+  { slug: 'mumbai', name: 'Mumbai', state: 'Maharashtra', icon: '🏙️', jobs: '500+' },
+  { slug: 'bangalore', name: 'Bangalore', state: 'Karnataka', icon: '🌆', jobs: '450+' },
+  { slug: 'delhi', name: 'Delhi', state: 'Delhi', icon: '🏛️', jobs: '400+' },
+  { slug: 'pune', name: 'Pune', state: 'Maharashtra', icon: '🏘️', jobs: '350+' },
+  { slug: 'hyderabad', name: 'Hyderabad', state: 'Telangana', icon: '🏗️', jobs: '300+' },
+  { slug: 'chennai', name: 'Chennai', state: 'Tamil Nadu', icon: '🌴', jobs: '250+' },
+  { slug: 'gurgaon', name: 'Gurgaon', state: 'Haryana', icon: '🏢', jobs: '200+' },
+  { slug: 'noida', name: 'Noida', state: 'Uttar Pradesh', icon: '🏬', jobs: '180+' },
+  { slug: 'kolkata', name: 'Kolkata', state: 'West Bengal', icon: '🎭', jobs: '150+' },
+  { slug: 'ahmedabad', name: 'Ahmedabad', state: 'Gujarat', icon: '🕌', jobs: '120+' },
+  { slug: 'remote', name: 'Remote', state: 'Work from Anywhere', icon: '💻', jobs: '300+' }
+]
+
+const stateGroups = {
+  'Maharashtra': ['mumbai', 'pune'],
+  'Karnataka': ['bangalore'],
+  'Delhi': ['delhi'],
+  'Telangana': ['hyderabad'],
+  'Tamil Nadu': ['chennai'],
+  'Haryana': ['gurgaon'],
+  'Uttar Pradesh': ['noida'],
+  'West Bengal': ['kolkata'],
+  'Gujarat': ['ahmedabad'],
+  'Remote': ['remote']
 }
 
-export default function LocationJobsPage() {
-  const params = useParams()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [allJobs, setAllJobs] = useState([])
-  const [filteredJobs, setFilteredJobs] = useState([])
-  const [filters, setFilters] = useState({
-    experienceLevel: 'all',
-    workMode: 'all',
-    salaryRange: 'all',
-    urgentOnly: false
-  })
-
-  const citySlug = params?.city
-  const cityInfo = cityMap[citySlug]
-
-  useEffect(() => {
-    const fetchAllJobs = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        // Fetch all jobs and filter client-side
-        const result = await graphqlRequest(GET_ALL_JOBS, { first: 200 })
-        
-        if (result?.posts?.nodes) {
-          setAllJobs(result.posts.nodes)
-        }
-      } catch (err) {
-        console.error('Error fetching jobs:', err)
-        setError('Failed to load jobs. Please try again.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchAllJobs()
-  }, [])
-
-  // Filter jobs when city or filters change
-  useEffect(() => {
-    if (!cityInfo || !allJobs.length) return
-
-    let filtered = filterJobsByLocation(allJobs, cityInfo.name)
-
-    // Apply additional filters
-    if (filters.experienceLevel !== 'all') {
-      filtered = filtered.filter(job => 
-        job.customFields?.experienceLevel?.toLowerCase() === filters.experienceLevel.toLowerCase()
-      )
-    }
-
-    if (filters.workMode !== 'all') {
-      filtered = filtered.filter(job => 
-        job.customFields?.workMode?.toLowerCase() === filters.workMode.toLowerCase()
-      )
-    }
-
-    if (filters.salaryRange !== 'all') {
-      const [min, max] = filters.salaryRange.split('-').map(Number)
-      filtered = filtered.filter(job => {
-        const jobMin = parseInt(job.customFields?.salaryMin) || 0
-        const jobMax = parseInt(job.customFields?.salaryMax) || 999
-        return jobMin >= min && jobMax <= max
-      })
-    }
-
-    if (filters.urgentOnly) {
-      filtered = filtered.filter(job => {
-        const isUrgent = job.customFields?.isUrgent
-        return isUrgent === '1' || isUrgent === true || isUrgent === 'true'
-      })
-    }
-
-    setFilteredJobs(filtered)
-  }, [allJobs, citySlug, cityInfo, filters])
-
-  if (!cityInfo) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">City Not Found</h1>
-          <p className="text-neutral-600">The city you're looking for doesn't exist in our listings.</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Get unique values for filters
-  const getUniqueValues = (field) => {
-    const locationJobs = filterJobsByLocation(allJobs, cityInfo.name)
-    const values = locationJobs
-      .map(job => job.customFields?.[field])
-      .filter(Boolean)
-      .filter((value, index, self) => self.indexOf(value) === index)
-    return values.sort()
-  }
-
-  const uniqueExperienceLevels = getUniqueValues('experienceLevel')
-  const uniqueWorkModes = getUniqueValues('workMode')
-
+export default function LocationsIndexPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header Section */}
-      <div className="mb-8">
-        <div className="bg-gradient-primary text-white rounded-2xl p-8 mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
-            Jobs in {cityInfo.name}
-          </h1>
-          <p className="text-lg opacity-90 mb-2">
-            {cityInfo.state}
-          </p>
-          <p className="text-sm opacity-80">
-            {loading ? 'Loading...' : `${filteredJobs.length} opportunities available`}
-          </p>
-        </div>
-
-        {/* Quick Stats */}
-        {!loading && filteredJobs.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg p-4 shadow-md text-center">
-              <div className="text-2xl font-bold text-primary-600">{filteredJobs.length}</div>
-              <p className="text-sm text-neutral-600">Total Jobs</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow-md text-center">
-              <div className="text-2xl font-bold text-success-600">
-                {filteredJobs.filter(job => job.customFields?.workMode === 'Remote').length}
-              </div>
-              <p className="text-sm text-neutral-600">Remote Options</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow-md text-center">
-              <div className="text-2xl font-bold text-warning-600">
-                {filteredJobs.filter(job => {
-                  const isUrgent = job.customFields?.isUrgent
-                  return isUrgent === '1' || isUrgent === true || isUrgent === 'true'
-                }).length}
-              </div>
-              <p className="text-sm text-neutral-600">Urgent Hiring</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow-md text-center">
-              <div className="text-2xl font-bold text-accent-600">
-                {filteredJobs.filter(job => job.customFields?.experienceLevel === 'Fresher').length}
-              </div>
-              <p className="text-sm text-neutral-600">Fresher Jobs</p>
-            </div>
-          </div>
-        )}
-
-        {/* Filters */}
-        {!loading && filteredJobs.length > 0 && (
-          <div className="bg-white rounded-lg p-6 shadow-md mb-6">
-            <h3 className="text-lg font-semibold mb-4">Filter Jobs in {cityInfo.name}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Experience Level Filter */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Experience Level
-                </label>
-                <select
-                  value={filters.experienceLevel}
-                  onChange={(e) => setFilters(prev => ({ ...prev, experienceLevel: e.target.value }))}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  <option value="all">All Experience Levels</option>
-                  {uniqueExperienceLevels.map(level => (
-                    <option key={level} value={level}>{level}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Work Mode Filter */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Work Mode
-                </label>
-                <select
-                  value={filters.workMode}
-                  onChange={(e) => setFilters(prev => ({ ...prev, workMode: e.target.value }))}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  <option value="all">All Work Modes</option>
-                  {uniqueWorkModes.map(mode => (
-                    <option key={mode} value={mode}>{mode}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Salary Range Filter */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Salary Range
-                </label>
-                <select
-                  value={filters.salaryRange}
-                  onChange={(e) => setFilters(prev => ({ ...prev, salaryRange: e.target.value }))}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  <option value="all">All Salary Ranges</option>
-                  <option value="0-3">0-3 LPA</option>
-                  <option value="3-5">3-5 LPA</option>
-                  <option value="5-8">5-8 LPA</option>
-                  <option value="8-12">8-12 LPA</option>
-                  <option value="12-999">12+ LPA</option>
-                </select>
-              </div>
-
-              {/* Urgent Jobs Toggle */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Job Type
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.urgentOnly}
-                    onChange={(e) => setFilters(prev => ({ ...prev, urgentOnly: e.target.checked }))}
-                    className="mr-2"
-                  />
-                  <span className="text-sm">Urgent jobs only</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent">
+          Jobs by Location
+        </h1>
+        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          Discover job opportunities across major cities in India. Find your perfect role 
+          in the city you want to work in.
+        </p>
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-              <div className="h-48 bg-neutral-200"></div>
-              <div className="p-6">
-                <div className="h-4 bg-neutral-200 rounded w-3/4 mb-4"></div>
-                <div className="h-4 bg-neutral-200 rounded w-1/2 mb-4"></div>
-                <div className="h-8 bg-neutral-200 rounded w-24"></div>
+      {/* Stats Section */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+        <div className="bg-white rounded-xl p-6 shadow-md text-center">
+          <div className="text-3xl font-bold text-primary-600 mb-2">11+</div>
+          <p className="text-gray-600">Cities</p>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md text-center">
+          <div className="text-3xl font-bold text-success-600 mb-2">2500+</div>
+          <p className="text-gray-600">Total Jobs</p>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md text-center">
+          <div className="text-3xl font-bold text-accent-600 mb-2">300+</div>
+          <p className="text-gray-600">Remote Jobs</p>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md text-center">
+          <div className="text-3xl font-bold text-warning-600 mb-2">10</div>
+          <p className="text-gray-600">States</p>
+        </div>
+      </div>
+
+      {/* All Cities Grid */}
+      <div className="mb-16">
+        <h2 className="text-2xl font-bold mb-8 text-center">All Cities</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {locations.map((location) => (
+            <Link
+              key={location.slug}
+              href={`/location/${location.slug}`}
+              className="group bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 hover:border-primary-200"
+            >
+              <div className="text-center">
+                <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                  {location.icon}
+                </div>
+                <h3 className="font-bold text-gray-800 mb-1 group-hover:text-primary-600 transition-colors">
+                  {location.name}
+                </h3>
+                <p className="text-sm text-gray-500 mb-3">{location.state}</p>
+                <div className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                  {location.jobs} Jobs
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Cities by State */}
+      <div className="mb-16">
+        <h2 className="text-2xl font-bold mb-8 text-center">Cities by State</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {Object.entries(stateGroups).map(([state, citySlugs]) => (
+            <div key={state} className="bg-white rounded-xl p-6 shadow-md">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">
+                {state}
+              </h3>
+              <div className="space-y-3">
+                {citySlugs.map(slug => {
+                  const location = locations.find(loc => loc.slug === slug)
+                  return (
+                    <Link
+                      key={slug}
+                      href={`/location/${slug}`}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-primary-50 transition-colors"
+                    >
+                      <span className="text-2xl">{location.icon}</span>
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-800 hover:text-primary-600">
+                          {location.name}
+                        </div>
+                        <div className="text-sm text-gray-500">{location.jobs} opportunities</div>
+                      </div>
+                      <span className="text-gray-400">→</span>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
           ))}
         </div>
-      )}
+      </div>
 
-      {/* Error State */}
-      {error && (
-        <div className="text-center py-16">
-          <div className="bg-error-50 border border-error-200 rounded-lg p-8 max-w-md mx-auto">
-            <div className="text-error-600 text-xl mb-4">⚠️ Error</div>
-            <p className="text-error-700 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="bg-error-600 text-white px-6 py-2 rounded-lg hover:bg-error-700 transition-colors"
+      {/* Popular Cities Highlight */}
+      <div className="bg-gradient-primary text-white rounded-2xl p-8 mb-12">
+        <h2 className="text-2xl font-bold mb-6 text-center">🔥 Top Job Destinations</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {locations.slice(0, 4).map((location) => (
+            <Link
+              key={location.slug}
+              href={`/location/${location.slug}`}
+              className="text-center group"
             >
-              Try Again
-            </button>
-          </div>
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">
+                {location.icon}
+              </div>
+              <div className="font-semibold group-hover:underline">{location.name}</div>
+              <div className="text-sm opacity-90">{location.jobs}</div>
+            </Link>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Jobs Grid */}
-      {!loading && !error && filteredJobs.length > 0 && (
-        <>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">
-              {filteredJobs.length} Job{filteredJobs.length !== 1 ? 's' : ''} in {cityInfo.name}
-            </h2>
+      {/* Quick Search by Location Type */}
+      <div className="bg-white rounded-2xl p-8 shadow-md mb-12">
+        <h2 className="text-2xl font-bold mb-6 text-center">Find Jobs by Location Type</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center p-6 bg-primary-50 rounded-lg">
+            <div className="text-4xl mb-4">🏙️</div>
+            <h3 className="font-bold mb-2">Metro Cities</h3>
+            <p className="text-sm text-gray-600 mb-4">Mumbai, Delhi, Bangalore, Chennai</p>
+            <div className="space-y-2">
+              <Link href="/location/mumbai" className="block text-primary-600 hover:underline">Mumbai Jobs</Link>
+              <Link href="/location/delhi" className="block text-primary-600 hover:underline">Delhi Jobs</Link>
+              <Link href="/location/bangalore" className="block text-primary-600 hover:underline">Bangalore Jobs</Link>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredJobs.map((post) => (
-              <JobCard key={post.id} post={post} />
-            ))}
+          <div className="text-center p-6 bg-success-50 rounded-lg">
+            <div className="text-4xl mb-4">🏢</div>
+            <h3 className="font-bold mb-2">IT Hubs</h3>
+            <p className="text-sm text-gray-600 mb-4">Bangalore, Pune, Hyderabad, Gurgaon</p>
+            <div className="space-y-2">
+              <Link href="/location/bangalore" className="block text-success-600 hover:underline">Bangalore Tech</Link>
+              <Link href="/location/pune" className="block text-success-600 hover:underline">Pune IT Jobs</Link>
+              <Link href="/location/hyderabad" className="block text-success-600 hover:underline">Hyderabad Tech</Link>
+            </div>
           </div>
-        </>
-      )}
-
-      {/* Empty State */}
-      {!loading && !error && filteredJobs.length === 0 && (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4">📍</div>
-          <h3 className="text-2xl font-bold text-neutral-700 mb-4">
-            No jobs found in {cityInfo.name}
-          </h3>
-          <p className="text-neutral-600 mb-6">
-            {allJobs.length > 0 
-              ? 'Try adjusting your filters to see more results.'
-              : `We're actively sourcing opportunities in ${cityInfo.name} for you!`
-            }
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => setFilters({ 
-                experienceLevel: 'all', 
-                workMode: 'all', 
-                salaryRange: 'all', 
-                urgentOnly: false 
-              })}
-              className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Clear Filters
-            </button>
-            <a
-              href="/search"
-              className="border border-primary-600 text-primary-600 px-6 py-3 rounded-lg hover:bg-primary-50 transition-colors"
-            >
-              Search All Jobs
-            </a>
+          
+          <div className="text-center p-6 bg-accent-50 rounded-lg">
+            <div className="text-4xl mb-4">💻</div>
+            <h3 className="font-bold mb-2">Remote Work</h3>
+            <p className="text-sm text-gray-600 mb-4">Work from anywhere in India</p>
+            <div className="space-y-2">
+              <Link href="/location/remote" className="block text-accent-600 hover:underline">All Remote Jobs</Link>
+              <Link href="/location/remote" className="block text-accent-600 hover:underline">WFH Opportunities</Link>
+              <Link href="/location/remote" className="block text-accent-600 hover:underline">Hybrid Roles</Link>
+            </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* SEO Content */}
+      <div className="bg-white rounded-2xl p-8 shadow-md">
+        <h2 className="text-2xl font-bold mb-4">Find Your Dream Job by Location</h2>
+        <div className="prose prose-gray max-w-none">
+          <p className="text-gray-600 mb-4">
+            India's job market is diverse and dynamic, with different cities offering unique 
+            opportunities across various industries. Whether you're looking for tech jobs in 
+            Bangalore, finance roles in Mumbai, or government positions in Delhi, we've got 
+            opportunities across all major Indian cities.
+          </p>
+          
+          <h3 className="text-lg font-semibold mb-3">Why Location Matters in Your Job Search:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-6">
+            <div>
+              <strong>• Industry Clusters:</strong> Different cities specialize in different industries
+            </div>
+            <div>
+              <strong>• Cost of Living:</strong> Salary expectations vary by location
+            </div>
+            <div>
+              <strong>• Career Growth:</strong> Some cities offer better advancement opportunities
+            </div>
+            <div>
+              <strong>• Work-Life Balance:</strong> Location affects commute and lifestyle
+            </div>
+          </div>
+
+          <h3 className="text-lg font-semibold mb-3">Top Employment Cities in India:</h3>
+          <div className="text-sm text-gray-600">
+            <p><strong>Technology:</strong> Bangalore, Pune, Hyderabad, Chennai</p>
+            <p><strong>Finance:</strong> Mumbai, Delhi, Bangalore, Chennai</p>
+            <p><strong>Startups:</strong> Bangalore, Mumbai, Delhi, Pune</p>
+            <p><strong>Government:</strong> Delhi, various state capitals</p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

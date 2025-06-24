@@ -1,277 +1,335 @@
-import Link from 'next/link'
+'use client'
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { graphqlRequest } from '../../../lib/apollo'
+import JobCard from '../../../components/JobCard'
 
-export default function SkillsOverviewPage() {
-  const skillCategories = [
-    {
-      category: 'Frontend Development',
-      icon: '🎨',
-      color: 'primary',
-      skills: [
-        { slug: 'react', name: 'React.js', icon: '⚛️', jobs: '250+', level: 'High Demand' },
-        { slug: 'javascript', name: 'JavaScript', icon: '🟨', jobs: '400+', level: 'Essential' },
-        { slug: 'angular', name: 'Angular', icon: '🔺', jobs: '180+', level: 'Popular' },
-        { slug: 'vue', name: 'Vue.js', icon: '💚', jobs: '120+', level: 'Growing' }
-      ]
-    },
-    {
-      category: 'Backend Development',
-      icon: '⚙️',
-      color: 'accent',
-      skills: [
-        { slug: 'python', name: 'Python', icon: '🐍', jobs: '300+', level: 'High Demand' },
-        { slug: 'java', name: 'Java', icon: '☕', jobs: '350+', level: 'Enterprise' },
-        { slug: 'nodejs', name: 'Node.js', icon: '🟢', jobs: '200+', level: 'Modern' },
-        { slug: 'php', name: 'PHP', icon: '🐘', jobs: '150+', level: 'Stable' }
-      ]
-    },
-    {
-      category: 'Data & AI',
-      icon: '🤖',
-      color: 'success',
-      skills: [
-        { slug: 'machine-learning', name: 'Machine Learning', icon: '🤖', jobs: '180+', level: 'Hot' },
-        { slug: 'data-science', name: 'Data Science', icon: '📊', jobs: '220+', level: 'Growing' },
-        { slug: 'python', name: 'Python (Data)', icon: '🐍', jobs: '250+', level: 'Essential' }
-      ]
-    },
-    {
-      category: 'Database',
-      icon: '🗄️',
-      color: 'warning',
-      skills: [
-        { slug: 'mysql', name: 'MySQL', icon: '🗄️', jobs: '280+', level: 'Standard' },
-        { slug: 'mongodb', name: 'MongoDB', icon: '🍃', jobs: '160+', level: 'NoSQL' }
-      ]
-    },
-    {
-      category: 'Cloud & DevOps',
-      icon: '☁️',
-      color: 'neutral',
-      skills: [
-        { slug: 'aws', name: 'AWS', icon: '☁️', jobs: '200+', level: 'High Pay' },
-        { slug: 'docker', name: 'Docker', icon: '🐳', jobs: '150+', level: 'Modern' },
-        { slug: 'kubernetes', name: 'Kubernetes', icon: '⚙️', jobs: '120+', level: 'Advanced' }
-      ]
-    },
-    {
-      category: 'Design & Marketing',
-      icon: '🎯',
-      color: 'error',
-      skills: [
-        { slug: 'ui-ux', name: 'UI/UX Design', icon: '🎨', jobs: '180+', level: 'Creative' },
-        { slug: 'digital-marketing', name: 'Digital Marketing', icon: '📱', jobs: '250+', level: 'Growing' },
-        { slug: 'seo', name: 'SEO', icon: '🔍', jobs: '140+', level: 'Essential' },
-        { slug: 'content-writing', name: 'Content Writing', icon: '✍️', jobs: '160+', level: 'Versatile' }
-      ]
-    }
-  ]
+// Skill mapping
+const skillMap = {
+  'react': { name: 'React.js', category: 'Frontend Development', icon: '⚛️', searchTerms: ['react', 'reactjs', 'react.js'] },
+  'javascript': { name: 'JavaScript', category: 'Programming', icon: '🟨', searchTerms: ['javascript', 'js', 'es6'] },
+  'python': { name: 'Python', category: 'Programming', icon: '🐍', searchTerms: ['python', 'django', 'flask'] },
+  'java': { name: 'Java', category: 'Programming', icon: '☕', searchTerms: ['java', 'spring', 'hibernate'] },
+  'nodejs': { name: 'Node.js', category: 'Backend Development', icon: '🟢', searchTerms: ['nodejs', 'node.js', 'node'] },
+  'angular': { name: 'Angular', category: 'Frontend Development', icon: '🔺', searchTerms: ['angular', 'angularjs'] },
+  'vue': { name: 'Vue.js', category: 'Frontend Development', icon: '💚', searchTerms: ['vue', 'vuejs', 'vue.js'] },
+  'php': { name: 'PHP', category: 'Backend Development', icon: '🐘', searchTerms: ['php', 'laravel', 'codeigniter'] },
+  'machine-learning': { name: 'Machine Learning', category: 'Data & AI', icon: '🤖', searchTerms: ['machine learning', 'ml', 'ai'] },
+  'data-science': { name: 'Data Science', category: 'Data & AI', icon: '📊', searchTerms: ['data science', 'data scientist', 'analytics'] },
+  'mysql': { name: 'MySQL', category: 'Database', icon: '🗄️', searchTerms: ['mysql', 'sql', 'database'] },
+  'mongodb': { name: 'MongoDB', category: 'Database', icon: '🍃', searchTerms: ['mongodb', 'mongo', 'nosql'] },
+  'aws': { name: 'AWS', category: 'Cloud & DevOps', icon: '☁️', searchTerms: ['aws', 'amazon web services', 'cloud'] },
+  'docker': { name: 'Docker', category: 'Cloud & DevOps', icon: '🐳', searchTerms: ['docker', 'containerization', 'devops'] },
+  'kubernetes': { name: 'Kubernetes', category: 'Cloud & DevOps', icon: '⚙️', searchTerms: ['kubernetes', 'k8s', 'orchestration'] },
+  'ui-ux': { name: 'UI/UX Design', category: 'Design & Marketing', icon: '🎨', searchTerms: ['ui', 'ux', 'design', 'figma'] },
+  'digital-marketing': { name: 'Digital Marketing', category: 'Design & Marketing', icon: '📱', searchTerms: ['digital marketing', 'marketing', 'seo', 'social media'] },
+  'seo': { name: 'SEO', category: 'Design & Marketing', icon: '🔍', searchTerms: ['seo', 'search engine optimization'] },
+  'content-writing': { name: 'Content Writing', category: 'Design & Marketing', icon: '✍️', searchTerms: ['content writing', 'copywriting', 'writing'] }
+}
 
-  const getLevelColor = (level) => {
-    switch (level) {
-      case 'Essential': case 'High Demand': return 'bg-success-100 text-success-700'
-      case 'Hot': case 'Modern': return 'bg-warning-100 text-warning-700'
-      case 'Growing': case 'Popular': return 'bg-primary-100 text-primary-700'
-      case 'Enterprise': case 'Standard': return 'bg-accent-100 text-accent-700'
-      default: return 'bg-neutral-100 text-neutral-700'
+const GET_SKILL_JOBS = `
+  query GetSkillJobs($search: String!, $first: Int = 50) {
+    posts(
+      first: $first,
+      where: {
+        search: $search,
+        orderby: {field: DATE, order: DESC}
+      }
+    ) {
+      nodes {
+        id
+        title
+        excerpt
+        slug
+        date
+        categories {
+          nodes {
+            name
+            slug
+          }
+        }
+        featuredImage {
+          node {
+            sourceUrl
+            altText
+          }
+        }
+        customFields
+      }
     }
   }
+`
 
-  const getColorClasses = (color) => {
-    const colors = {
-      primary: 'border-primary-200 hover:border-primary-300 hover:bg-primary-50',
-      accent: 'border-accent-200 hover:border-accent-300 hover:bg-accent-50',
-      success: 'border-success-200 hover:border-success-300 hover:bg-success-50',
-      warning: 'border-warning-200 hover:border-warning-300 hover:bg-warning-50',
-      error: 'border-error-200 hover:border-error-300 hover:bg-error-50',
-      neutral: 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50'
+export default function SkillJobsPage() {
+  const params = useParams()
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [data, setData] = useState(null)
+  const [mounted, setMounted] = useState(false)
+
+  const skillSlug = params?.skill
+  const skillInfo = skillMap[skillSlug]
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted || !skillSlug) return
+
+    const fetchSkillJobs = async () => {
+      if (!skillInfo) {
+        setError('Skill not found')
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        setError(null)
+        
+        // Try multiple search terms for better results
+        const searchPromises = skillInfo.searchTerms.map(term => 
+          graphqlRequest(GET_SKILL_JOBS, { search: term, first: 20 })
+        )
+        
+        const results = await Promise.all(searchPromises)
+        
+        // Combine and deduplicate results
+        const allJobs = []
+        const seenIds = new Set()
+        
+        results.forEach(result => {
+          result?.posts?.nodes?.forEach(job => {
+            if (!seenIds.has(job.id)) {
+              seenIds.add(job.id)
+              allJobs.push(job)
+            }
+          })
+        })
+        
+        // Sort by date
+        allJobs.sort((a, b) => new Date(b.date) - new Date(a.date))
+        
+        setData({ posts: { nodes: allJobs } })
+      } catch (err) {
+        console.error('Error fetching skill jobs:', err)
+        setError('Failed to load jobs. Please try again.')
+      } finally {
+        setLoading(false)
+      }
     }
-    return colors[color] || colors.neutral
+
+    fetchSkillJobs()
+  }, [mounted, skillSlug, skillInfo])
+
+  if (!mounted) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
+        </div>
+      </div>
+    )
   }
+
+  if (!skillInfo) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Skill Not Found</h1>
+          <p className="text-gray-600 mb-4">The skill you're looking for doesn't exist.</p>
+          <a
+            href="/skills"
+            className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Browse All Skills
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  const jobs = data?.posts?.nodes || []
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header Section */}
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4 bg-gradient-accent bg-clip-text text-transparent">
-          Jobs by Skills
-        </h1>
-        <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-          Discover opportunities based on your technical skills. From programming languages 
-          to cutting-edge technologies, find your perfect match.
-        </p>
-      </div>
-
-      {/* Stats Section */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-        <div className="bg-white rounded-xl p-6 shadow-md text-center">
-          <div className="text-3xl font-bold text-accent-600 mb-2">20+</div>
-          <p className="text-neutral-600">Skills</p>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-md text-center">
-          <div className="text-3xl font-bold text-primary-600 mb-2">6</div>
-          <p className="text-neutral-600">Categories</p>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-md text-center">
-          <div className="text-3xl font-bold text-success-600 mb-2">3000+</div>
-          <p className="text-neutral-600">Total Jobs</p>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-md text-center">
-          <div className="text-3xl font-bold text-warning-600 mb-2">500+</div>
-          <p className="text-neutral-600">Companies</p>
-        </div>
-      </div>
-
-      {/* Skills by Category */}
-      <div className="space-y-8 mb-12">
-        {skillCategories.map((categoryData) => (
-          <div key={categoryData.category} className="bg-white rounded-2xl p-8 shadow-md">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="text-3xl">{categoryData.icon}</div>
-              <h2 className="text-2xl font-bold text-neutral-800">{categoryData.category}</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {categoryData.skills.map((skill) => (
-                <Link
-                  key={skill.slug}
-                  href={`/skills/${skill.slug}`}
-                  className={`group bg-white rounded-xl p-6 border-2 transition-all duration-300 hover:scale-105 hover:shadow-lg ${getColorClasses(categoryData.color)}`}
-                >
-                  <div className="text-center">
-                    <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                      {skill.icon}
-                    </div>
-                    <h3 className="font-bold text-neutral-800 mb-2 group-hover:text-primary-600 transition-colors">
-                      {skill.name}
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      <span className="text-lg font-semibold text-success-600">
-                        {skill.jobs} Jobs
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${getLevelColor(skill.level)}`}>
-                        {skill.level}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+      <div className="mb-8">
+        <div className="bg-gradient-accent text-white rounded-2xl p-8 mb-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="text-4xl">{skillInfo.icon}</div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold">
+                {skillInfo.name} Jobs
+              </h1>
+              <p className="text-lg opacity-90">
+                {skillInfo.category}
+              </p>
+              <p className="text-sm opacity-80 mt-2">
+                {loading ? '...' : `${jobs.length} opportunities`} available
+              </p>
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* Breadcrumb */}
+        <nav className="flex text-sm text-gray-600 mb-6">
+          <a href="/" className="hover:text-primary-600">Home</a>
+          <span className="mx-2">/</span>
+          <a href="/skills" className="hover:text-primary-600">Skills</a>
+          <span className="mx-2">/</span>
+          <span className="text-gray-800">{skillInfo.name}</span>
+        </nav>
+
+        {/* Quick Stats */}
+        {!loading && jobs.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-lg p-4 shadow-md text-center">
+              <div className="text-2xl font-bold text-accent-600">{jobs.length}</div>
+              <p className="text-sm text-gray-600">Total Jobs</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-md text-center">
+              <div className="text-2xl font-bold text-success-600">
+                {jobs.filter(job => {
+                  try {
+                    const customFields = typeof job.customFields === 'string' 
+                      ? JSON.parse(job.customFields) 
+                      : job.customFields || {}
+                    return customFields.workMode === 'Remote'
+                  } catch { return false }
+                }).length}
+              </div>
+              <p className="text-sm text-gray-600">Remote Options</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-md text-center">
+              <div className="text-2xl font-bold text-warning-600">
+                {jobs.filter(job => {
+                  try {
+                    const customFields = typeof job.customFields === 'string' 
+                      ? JSON.parse(job.customFields) 
+                      : job.customFields || {}
+                    return customFields.isUrgent === '1' || customFields.isUrgent === true
+                  } catch { return false }
+                }).length}
+              </div>
+              <p className="text-sm text-gray-600">Urgent Hiring</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-md text-center">
+              <div className="text-2xl font-bold text-primary-600">
+                {jobs.filter(job => {
+                  try {
+                    const customFields = typeof job.customFields === 'string' 
+                      ? JSON.parse(job.customFields) 
+                      : job.customFields || {}
+                    return customFields.experienceLevel === 'Fresher'
+                  } catch { return false }
+                }).length}
+              </div>
+              <p className="text-sm text-gray-600">Fresher Jobs</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Trending Skills */}
-      <div className="bg-gradient-primary text-white rounded-2xl p-8 mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-center">🔥 Trending Skills This Month</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { name: 'React.js', growth: '+25%' },
-            { name: 'Python', growth: '+20%' },
-            { name: 'Machine Learning', growth: '+30%' },
-            { name: 'AWS', growth: '+18%' }
-          ].map((trend) => (
-            <div key={trend.name} className="text-center">
-              <div className="text-lg font-semibold">{trend.name}</div>
-              <div className="text-sm opacity-90">{trend.growth} growth</div>
+      {/* Loading State */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, index) => (
+            <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+              <div className="h-48 bg-gray-200"></div>
+              <div className="p-6">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+                <div className="h-8 bg-gray-200 rounded w-24"></div>
+              </div>
             </div>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* Skill Combinations */}
-      <div className="bg-white rounded-2xl p-8 shadow-md mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-center">Popular Skill Combinations</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="p-4 bg-neutral-50 rounded-lg">
-            <h3 className="font-semibold mb-2">Full Stack Development</h3>
-            <div className="flex flex-wrap gap-2">
-              <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded">React</span>
-              <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded">Node.js</span>
-              <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded">MongoDB</span>
-            </div>
-          </div>
-          
-          <div className="p-4 bg-neutral-50 rounded-lg">
-            <h3 className="font-semibold mb-2">Data Science</h3>
-            <div className="flex flex-wrap gap-2">
-              <span className="text-xs bg-success-100 text-success-700 px-2 py-1 rounded">Python</span>
-              <span className="text-xs bg-success-100 text-success-700 px-2 py-1 rounded">Machine Learning</span>
-              <span className="text-xs bg-success-100 text-success-700 px-2 py-1 rounded">SQL</span>
-            </div>
-          </div>
-          
-          <div className="p-4 bg-neutral-50 rounded-lg">
-            <h3 className="font-semibold mb-2">DevOps Engineer</h3>
-            <div className="flex flex-wrap gap-2">
-              <span className="text-xs bg-accent-100 text-accent-700 px-2 py-1 rounded">AWS</span>
-              <span className="text-xs bg-accent-100 text-accent-700 px-2 py-1 rounded">Docker</span>
-              <span className="text-xs bg-accent-100 text-accent-700 px-2 py-1 rounded">Kubernetes</span>
-            </div>
+      {/* Error State */}
+      {error && (
+        <div className="text-center py-16">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
+            <div className="text-red-600 text-xl mb-4">⚠️ Error</div>
+            <p className="text-red-700 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Learning Resources */}
-      <div className="bg-white rounded-2xl p-8 shadow-md mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-center">🎓 Skill Up with Free Resources</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-4xl mb-4">📚</div>
-            <h3 className="font-semibold mb-2">Free Courses</h3>
-            <p className="text-sm text-neutral-600">Learn from top platforms like Coursera, edX, and YouTube</p>
+      {/* Jobs Grid */}
+      {!loading && !error && jobs.length > 0 && (
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold">
+              {jobs.length} {skillInfo.name} Job{jobs.length !== 1 ? 's' : ''} Available
+            </h2>
           </div>
-          <div className="text-center">
-            <div className="text-4xl mb-4">💻</div>
-            <h3 className="font-semibold mb-2">Practice Projects</h3>
-            <p className="text-sm text-neutral-600">Build real-world projects to showcase your skills</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {jobs.map((job) => (
+              <JobCard key={job.id} post={job} />
+            ))}
           </div>
-          <div className="text-center">
-            <div className="text-4xl mb-4">🏆</div>
-            <h3 className="font-semibold mb-2">Certifications</h3>
-            <p className="text-sm text-neutral-600">Get certified from Google, Microsoft, AWS, and more</p>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
 
-      {/* SEO Content */}
-      <div className="bg-white rounded-2xl p-8 shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Master In-Demand Skills for Your Tech Career</h2>
-        <div className="prose prose-neutral max-w-none">
-          <p className="text-neutral-600 mb-4">
-            The technology landscape is constantly evolving, and staying current with in-demand skills 
-            is crucial for career success. Whether you're a fresher starting your journey or an 
-            experienced professional looking to upskill, understanding market demands helps you 
-            make informed career decisions.
+      {/* Empty State */}
+      {!loading && !error && jobs.length === 0 && (
+        <div className="text-center py-16">
+          <div className="text-6xl mb-4">{skillInfo.icon}</div>
+          <h3 className="text-2xl font-bold text-gray-700 mb-4">
+            No {skillInfo.name} jobs found
+          </h3>
+          <p className="text-gray-600 mb-6">
+            We're actively sourcing {skillInfo.name} opportunities for you!
           </p>
-          
-          <h3 className="text-lg font-semibold mb-3">How to Choose the Right Skills:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-neutral-600 mb-6">
-            <div>
-              <strong>• Market Demand:</strong> Focus on skills with high job availability
-            </div>
-            <div>
-              <strong>• Growth Potential:</strong> Choose technologies with upward trends
-            </div>
-            <div>
-              <strong>• Salary Impact:</strong> Some skills command premium salaries
-            </div>
-            <div>
-              <strong>• Learning Curve:</strong> Consider time investment vs. returns
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="/skills"
+              className="bg-accent-600 text-white px-6 py-3 rounded-lg hover:bg-accent-700 transition-colors"
+            >
+              Browse All Skills
+            </a>
+            <a
+              href="/search"
+              className="border border-accent-600 text-accent-600 px-6 py-3 rounded-lg hover:bg-accent-50 transition-colors"
+            >
+              Search All Jobs
+            </a>
           </div>
+        </div>
+      )}
 
-          <h3 className="text-lg font-semibold mb-3">Skills by Experience Level:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-neutral-600">
-            <div>
-              <strong>Freshers:</strong> HTML, CSS, JavaScript, Python basics
-            </div>
-            <div>
-              <strong>Intermediate:</strong> React, Node.js, databases, cloud basics
-            </div>
-            <div>
-              <strong>Advanced:</strong> System design, DevOps, machine learning
-            </div>
-          </div>
+      {/* Related Skills */}
+      <div className="mt-16 bg-white rounded-2xl p-8 shadow-md">
+        <h2 className="text-2xl font-bold mb-6">Related Skills</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Object.entries(skillMap)
+            .filter(([slug]) => slug !== skillSlug && skillMap[slug].category === skillInfo.category)
+            .slice(0, 4)
+            .map(([slug, skill]) => (
+              <a
+                key={slug}
+                href={`/skills/${slug}`}
+                className="group p-4 bg-gray-50 rounded-lg hover:bg-accent-50 transition-colors text-center"
+              >
+                <div className="text-2xl mb-2 group-hover:scale-110 transition-transform duration-300">
+                  {skill.icon}
+                </div>
+                <div className="font-medium text-gray-800 group-hover:text-accent-600">
+                  {skill.name}
+                </div>
+              </a>
+            ))}
         </div>
       </div>
     </div>

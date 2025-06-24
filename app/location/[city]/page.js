@@ -9,119 +9,90 @@ import JobCard from '../../../components/JobCard'
 const cityMap = {
   'mumbai': { 
     name: 'Mumbai', 
-    acfValue: 'Mumbai', // Must match your ACF Select field options
     state: 'Maharashtra',
-    stateAcfValue: 'Maharashtra',
     icon: '🏙️',
     description: 'India\'s financial capital and business hub',
     industries: ['Finance', 'IT', 'Entertainment', 'Manufacturing'],
     avgSalary: '₹8-15 LPA',
-    searchTerms: ['mumbai', 'bombay'],
-    seoTitle: 'Jobs in Mumbai - Latest IT & Finance Opportunities | Classic Jobs',
-    metaDescription: 'Find 500+ jobs in Mumbai. IT, Finance, and Business opportunities in India\'s financial capital. Apply to top companies now!'
+    acfCityValues: ['Mumbai', 'mumbai', 'Bombay', 'bombay'],
+    acfStateValues: ['Maharashtra', 'maharashtra', 'MH'],
+    searchTerms: ['mumbai', 'bombay', 'Maharashtra']
   },
   'bangalore': { 
     name: 'Bangalore', 
-    acfValue: 'Bangalore', // Or 'Bengaluru' - check your ACF options
     state: 'Karnataka',
-    stateAcfValue: 'Karnataka',
     icon: '🌆',
     description: 'India\'s Silicon Valley and IT capital',
     industries: ['IT', 'Startups', 'Biotechnology', 'Aerospace'],
     avgSalary: '₹6-18 LPA',
-    searchTerms: ['bangalore', 'bengaluru'],
-    seoTitle: 'Jobs in Bangalore - IT & Tech Career Opportunities | Classic Jobs',
-    metaDescription: 'Discover 450+ IT jobs in Bangalore. Software development, data science, and tech startup opportunities in India\'s Silicon Valley.'
+    acfCityValues: ['Bangalore', 'bangalore', 'Bengaluru', 'bengaluru'],
+    acfStateValues: ['Karnataka', 'karnataka', 'KA'],
+    searchTerms: ['bangalore', 'bengaluru', 'Karnataka']
   },
   'delhi': { 
     name: 'Delhi', 
-    acfValue: 'Delhi', // Or 'New Delhi' - check your ACF options
     state: 'Delhi',
-    stateAcfValue: 'Delhi',
     icon: '🏛️',
     description: 'India\'s capital and government hub',
     industries: ['Government', 'IT', 'Education', 'Healthcare'],
     avgSalary: '₹5-12 LPA',
-    searchTerms: ['delhi', 'new delhi', 'ncr'],
-    seoTitle: 'Jobs in Delhi NCR - Government & IT Opportunities | Classic Jobs',
-    metaDescription: 'Find 400+ jobs in Delhi NCR. Government, IT, and corporate opportunities in India\'s capital region.'
+    acfCityValues: ['Delhi', 'delhi', 'New Delhi', 'new delhi'],
+    acfStateValues: ['Delhi', 'delhi', 'NCR', 'ncr'],
+    searchTerms: ['delhi', 'new delhi', 'ncr', 'gurgaon', 'noida']
   },
   'pune': { 
     name: 'Pune', 
-    acfValue: 'Pune',
     state: 'Maharashtra',
-    stateAcfValue: 'Maharashtra',
     icon: '🏘️',
     description: 'IT hub and educational center of Maharashtra',
     industries: ['IT', 'Automotive', 'Education', 'Manufacturing'],
     avgSalary: '₹5-14 LPA',
-    searchTerms: ['pune'],
-    seoTitle: 'Jobs in Pune - IT & Engineering Career Opportunities | Classic Jobs',
-    metaDescription: 'Explore 350+ IT and engineering jobs in Pune. Top opportunities in software development and automotive sectors.'
+    acfCityValues: ['Pune', 'pune'],
+    acfStateValues: ['Maharashtra', 'maharashtra', 'MH'],
+    searchTerms: ['pune', 'Maharashtra']
   },
   'hyderabad': { 
     name: 'Hyderabad', 
-    acfValue: 'Hyderabad',
     state: 'Telangana',
-    stateAcfValue: 'Telangana',
     icon: '🏗️',
     description: 'Cyberabad - IT and pharmaceutical hub',
     industries: ['IT', 'Pharmaceuticals', 'Biotechnology', 'Aerospace'],
     avgSalary: '₹5-15 LPA',
-    searchTerms: ['hyderabad', 'cyberabad'],
-    seoTitle: 'Jobs in Hyderabad - IT & Pharma Career Opportunities | Classic Jobs',
-    metaDescription: 'Find 300+ IT and pharmaceutical jobs in Hyderabad. Microsoft, Google, and pharma giants are hiring.'
+    acfCityValues: ['Hyderabad', 'hyderabad', 'Cyberabad', 'cyberabad'],
+    acfStateValues: ['Telangana', 'telangana', 'TS'],
+    searchTerms: ['hyderabad', 'cyberabad', 'Telangana']
   },
   'chennai': { 
     name: 'Chennai', 
-    acfValue: 'Chennai',
     state: 'Tamil Nadu',
-    stateAcfValue: 'Tamil Nadu',
     icon: '🌴',
     description: 'Detroit of India and IT services hub',
     industries: ['Automotive', 'IT', 'Healthcare', 'Manufacturing'],
     avgSalary: '₹4-12 LPA',
-    searchTerms: ['chennai', 'madras'],
-    seoTitle: 'Jobs in Chennai - Automotive & IT Career Opportunities | Classic Jobs',
-    metaDescription: 'Discover 250+ automotive and IT jobs in Chennai. Manufacturing and software services opportunities.'
+    acfCityValues: ['Chennai', 'chennai', 'Madras', 'madras'],
+    acfStateValues: ['Tamil Nadu', 'tamil nadu', 'TN'],
+    searchTerms: ['chennai', 'madras', 'Tamil Nadu']
   },
   'remote': { 
     name: 'Remote', 
-    acfValue: 'Remote', // Or 'Work from Home' - check your ACF options
     state: 'Work from Anywhere',
-    stateAcfValue: 'Remote',
     icon: '💻',
     description: 'Work from anywhere in India',
     industries: ['IT', 'Digital Marketing', 'Content', 'Consulting'],
     avgSalary: '₹4-25 LPA',
-    searchTerms: ['remote', 'work from home', 'wfh'],
-    seoTitle: 'Remote Jobs India - Work from Home Opportunities | Classic Jobs',
-    metaDescription: 'Find 300+ remote jobs in India. Work from home opportunities in IT, digital marketing, and consulting.'
+    acfCityValues: ['Remote', 'remote', 'Work from Home', 'WFH'],
+    acfStateValues: ['Remote', 'remote', 'Work from Anywhere'],
+    searchTerms: ['remote', 'work from home', 'wfh', 'online']
   }
 }
 
-// Primary GraphQL query using your exact ACF field structure
-const GET_JOBS_BY_CITY_ACF = `
-  query GetJobsByCityACF($cityValue: String!, $stateValue: String!) {
+// Working GraphQL query - uses individual ACF fields instead of field groups
+const GET_JOBS_WITH_ACF_FIELDS = `
+  query GetJobsWithACFFields {
     posts(
-      first: 100,
+      first: 300,
       where: {
-        orderby: {field: DATE, order: DESC},
-        metaQuery: {
-          relation: OR,
-          metaArray: [
-            {
-              key: "city",
-              value: $cityValue,
-              compare: EQUAL_TO
-            },
-            {
-              key: "state", 
-              value: $stateValue,
-              compare: EQUAL_TO
-            }
-          ]
-        }
+        orderby: {field: DATE, order: DESC}
       }
     ) {
       nodes {
@@ -142,48 +113,30 @@ const GET_JOBS_BY_CITY_ACF = `
             altText
           }
         }
-        # Your ACF field groups
-        jobLocationWorkDetails {
-          city
-          state
-          workMode
-        }
-        salaryJobSpecifics {
-          salaryMin
-          salaryMax
-          isUrgent
-          applicationDeadline
-          companySize
-        }
-        skillsRequirements {
-          requiredSkills
-          experienceLevel
-          educationRequired
-        }
-        # Fallback to customFields
-        customFields
+        # Individual ACF fields (not field groups)
+        city
+        state
+        workMode
+        salaryMin
+        salaryMax
+        isUrgent
+        applicationDeadline
+        companySize
+        requiredSkills
+        experienceLevel
+        educationRequired
       }
     }
   }
 `
 
-// Secondary query using LIKE comparison
-const GET_JOBS_BY_CITY_LIKE = `
-  query GetJobsByCityLike($cityValue: String!) {
+// Fallback query without ACF fields
+const GET_JOBS_SIMPLE = `
+  query GetJobsSimple {
     posts(
-      first: 100,
+      first: 300,
       where: {
-        orderby: {field: DATE, order: DESC},
-        metaQuery: {
-          relation: OR,
-          metaArray: [
-            {
-              key: "city",
-              value: $cityValue,
-              compare: LIKE
-            }
-          ]
-        }
+        orderby: {field: DATE, order: DESC}
       }
     ) {
       nodes {
@@ -204,34 +157,16 @@ const GET_JOBS_BY_CITY_LIKE = `
             altText
           }
         }
-        jobLocationWorkDetails {
-          city
-          state
-          workMode
-        }
-        salaryJobSpecifics {
-          salaryMin
-          salaryMax
-          isUrgent
-          applicationDeadline
-          companySize
-        }
-        skillsRequirements {
-          requiredSkills
-          experienceLevel
-          educationRequired
-        }
-        customFields
       }
     }
   }
 `
 
-// Fallback search query
+// Search-based fallback query
 const GET_JOBS_BY_SEARCH = `
   query GetJobsBySearch($searchTerm: String!) {
     posts(
-      first: 50,
+      first: 100,
       where: {
         search: $searchTerm,
         orderby: {field: DATE, order: DESC}
@@ -255,131 +190,156 @@ const GET_JOBS_BY_SEARCH = `
             altText
           }
         }
-        jobLocationWorkDetails {
-          city
-          state
-          workMode
-        }
-        salaryJobSpecifics {
-          salaryMin
-          salaryMax
-          isUrgent
-          applicationDeadline
-          companySize
-        }
-        skillsRequirements {
-          requiredSkills
-          experienceLevel
-          educationRequired
-        }
-        customFields
       }
     }
   }
 `
 
-// Helper function to extract ACF data from your field structure
+// Helper function to extract ACF data from direct fields
 const extractACFData = (post) => {
-  const acfData = {}
-  
-  // Extract from your ACF field groups
-  if (post.jobLocationWorkDetails) {
-    acfData.city = post.jobLocationWorkDetails.city
-    acfData.state = post.jobLocationWorkDetails.state
-    acfData.workMode = post.jobLocationWorkDetails.workMode
-  }
-  
-  if (post.salaryJobSpecifics) {
-    acfData.salaryMin = post.salaryJobSpecifics.salaryMin
-    acfData.salaryMax = post.salaryJobSpecifics.salaryMax
-    acfData.isUrgent = post.salaryJobSpecifics.isUrgent
-    acfData.applicationDeadline = post.salaryJobSpecifics.applicationDeadline
-    acfData.companySize = post.salaryJobSpecifics.companySize
-  }
-  
-  if (post.skillsRequirements) {
-    acfData.requiredSkills = post.skillsRequirements.requiredSkills
-    acfData.experienceLevel = post.skillsRequirements.experienceLevel
-    acfData.educationRequired = post.skillsRequirements.educationRequired
-  }
-  
-  // Fallback to customFields parsing if ACF groups not available
-  if (Object.keys(acfData).length === 0 && post.customFields) {
-    try {
-      const parsed = typeof post.customFields === 'string' 
-        ? JSON.parse(post.customFields) 
-        : post.customFields
-      
-      return {
-        city: parsed.city,
-        state: parsed.state,
-        workMode: parsed.work_mode,
-        salaryMin: parsed.salary_min,
-        salaryMax: parsed.salary_max,
-        isUrgent: parsed.is_urgent,
-        applicationDeadline: parsed.application_deadline,
-        companySize: parsed.company_size,
-        requiredSkills: parsed.required_skills,
-        experienceLevel: parsed.experience_level,
-        educationRequired: parsed.education_required
-      }
-    } catch (error) {
-      console.warn('Failed to parse customFields:', error)
-      return {}
+  try {
+    // Direct ACF field access (if available)
+    return {
+      city: post.city || '',
+      state: post.state || '',
+      workMode: post.workMode || '',
+      salaryMin: post.salaryMin || '',
+      salaryMax: post.salaryMax || '',
+      isUrgent: post.isUrgent || false,
+      applicationDeadline: post.applicationDeadline || '',
+      companySize: post.companySize || '',
+      requiredSkills: post.requiredSkills || '',
+      experienceLevel: post.experienceLevel || '',
+      educationRequired: post.educationRequired || ''
     }
+  } catch (error) {
+    console.warn('Failed to extract ACF data:', error)
+    return {}
   }
-  
-  return acfData
 }
 
-// Filter jobs by city using ACF data
+// Enhanced filtering function with proper ACF field matching
 const filterJobsByCity = (jobs, cityInfo) => {
   if (!jobs || !cityInfo) return []
   
   return jobs.filter(job => {
-    const acfData = extractACFData(job)
-    const title = (job.title || '').toLowerCase()
-    const excerpt = (job.excerpt || '').toLowerCase()
-    
-    // Check ACF city and state fields
-    const jobCity = (acfData.city || '').toLowerCase()
-    const jobState = (acfData.state || '').toLowerCase()
-    
-    // Exact match with ACF values
-    if (jobCity === cityInfo.acfValue.toLowerCase()) return true
-    if (jobState === cityInfo.stateAcfValue.toLowerCase()) return true
-    
-    // Partial match in ACF fields
-    if (jobCity.includes(cityInfo.acfValue.toLowerCase())) return true
-    
-    // Search terms in ACF fields
-    const acfSearchMatch = cityInfo.searchTerms.some(term => 
-      jobCity.includes(term.toLowerCase()) || 
-      jobState.includes(term.toLowerCase())
-    )
-    if (acfSearchMatch) return true
-    
-    // Fallback: search in title and excerpt
-    const titleExcerptMatch = cityInfo.searchTerms.some(term => 
-      title.includes(term.toLowerCase()) || 
-      excerpt.includes(term.toLowerCase())
-    )
-    
-    return titleExcerptMatch
+    try {
+      const acfData = extractACFData(job)
+      const title = (job.title || '').toLowerCase()
+      const excerpt = (job.excerpt || '').toLowerCase()
+      
+      // Get ACF values safely
+      const jobCity = (acfData.city || '').toString().toLowerCase().trim()
+      const jobState = (acfData.state || '').toString().toLowerCase().trim()
+      
+      // Strategy 1: Exact ACF field matches
+      const acfCityMatch = cityInfo.acfCityValues.some(acfValue => 
+        jobCity === acfValue.toLowerCase().trim()
+      )
+      
+      const acfStateMatch = cityInfo.acfStateValues.some(acfValue => 
+        jobState === acfValue.toLowerCase().trim()
+      )
+      
+      // Strategy 2: Partial ACF field matches
+      const acfPartialMatch = cityInfo.acfCityValues.some(acfValue => 
+        jobCity.includes(acfValue.toLowerCase()) || 
+        jobState.includes(acfValue.toLowerCase())
+      ) || cityInfo.acfStateValues.some(acfValue => 
+        jobCity.includes(acfValue.toLowerCase()) || 
+        jobState.includes(acfValue.toLowerCase())
+      )
+      
+      // Strategy 3: Content-based matches (fallback)
+      const contentMatch = cityInfo.searchTerms.some(term => {
+        const searchTerm = term.toLowerCase()
+        return title.includes(searchTerm) || excerpt.includes(searchTerm)
+      })
+      
+      const matched = acfCityMatch || acfStateMatch || acfPartialMatch || contentMatch
+      
+      // Debug logging
+      if (process.env.NODE_ENV === 'development' && matched) {
+        console.log(`✅ Job "${job.title}" matched for ${cityInfo.name}:`, {
+          jobCity,
+          jobState,
+          acfCityMatch,
+          acfStateMatch,
+          acfPartialMatch,
+          contentMatch,
+          acfData
+        })
+      }
+      
+      return matched
+    } catch (error) {
+      console.warn('Error filtering job:', error)
+      return false
+    }
   })
+}
+
+// Calculate job statistics
+const calculateStats = (jobs, cityInfo) => {
+  const cityJobs = filterJobsByCity(jobs, cityInfo)
+  
+  const stats = {
+    total: cityJobs.length,
+    urgent: 0,
+    remote: 0,
+    fresher: 0,
+    senior: 0
+  }
+  
+  cityJobs.forEach(job => {
+    try {
+      const acfData = extractACFData(job)
+      const title = (job.title || '').toLowerCase()
+      
+      // Count urgent jobs (check boolean and string values)
+      if (acfData.isUrgent === true || acfData.isUrgent === 'true' || 
+          acfData.isUrgent === '1' || acfData.isUrgent === 1 ||
+          title.includes('urgent')) {
+        stats.urgent++
+      }
+      
+      // Count remote jobs
+      const workMode = (acfData.workMode || '').toString().toLowerCase()
+      if (workMode.includes('remote') || workMode.includes('wfh') ||
+          title.includes('remote') || title.includes('wfh')) {
+        stats.remote++
+      }
+      
+      // Count fresher jobs
+      const experienceLevel = (acfData.experienceLevel || '').toString().toLowerCase()
+      if (experienceLevel.includes('fresher') || 
+          title.includes('fresher') || title.includes('trainee')) {
+        stats.fresher++
+      }
+      
+      // Count senior jobs
+      if (experienceLevel.includes('senior') || 
+          title.includes('senior') || title.includes('lead')) {
+        stats.senior++
+      }
+    } catch (error) {
+      // Skip if parsing fails
+    }
+  })
+  
+  return stats
 }
 
 export default function LocationCityPage() {
   const params = useParams()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [jobs, setJobs] = useState([])
+  const [allJobs, setAllJobs] = useState([])
   const [filteredJobs, setFilteredJobs] = useState([])
   const [mounted, setMounted] = useState(false)
   const [activeFilter, setActiveFilter] = useState('all')
-  const [filters, setFilters] = useState({
+  const [additionalFilters, setAdditionalFilters] = useState({
     experience: 'all',
-    salary: 'all',
     workMode: 'all',
     urgent: false
   })
@@ -399,61 +359,76 @@ export default function LocationCityPage() {
         setLoading(true)
         setError(null)
         
-        let allJobs = []
+        let allJobsData = []
         
-        // Strategy 1: Primary ACF meta query (exact match)
+        // Strategy 1: Try individual ACF fields
         try {
-          console.log('🎯 Trying ACF meta query for:', cityInfo.acfValue)
-          const acfResult = await graphqlRequest(GET_JOBS_BY_CITY_ACF, {
-            cityValue: cityInfo.acfValue,
-            stateValue: cityInfo.stateAcfValue
-          })
+          console.log('🎯 Attempting to fetch jobs with individual ACF fields...')
+          const acfResult = await graphqlRequest(GET_JOBS_WITH_ACF_FIELDS)
           
           if (acfResult?.posts?.nodes) {
-            allJobs = [...allJobs, ...acfResult.posts.nodes]
-            console.log('✅ ACF meta query returned:', acfResult.posts.nodes.length, 'jobs')
-          }
-        } catch (err) {
-          console.warn('❌ ACF meta query failed:', err.message)
-        }
-        
-        // Strategy 2: ACF meta query with LIKE comparison
-        try {
-          console.log('🔍 Trying ACF LIKE query for:', cityInfo.acfValue)
-          const likeResult = await graphqlRequest(GET_JOBS_BY_CITY_LIKE, {
-            cityValue: cityInfo.acfValue
-          })
-          
-          if (likeResult?.posts?.nodes) {
-            allJobs = [...allJobs, ...likeResult.posts.nodes]
-            console.log('✅ ACF LIKE query returned:', likeResult.posts.nodes.length, 'jobs')
-          }
-        } catch (err) {
-          console.warn('❌ ACF LIKE query failed:', err.message)
-        }
-        
-        // Strategy 3: Fallback search queries
-        try {
-          console.log('🔎 Trying fallback search for:', cityInfo.searchTerms)
-          const searchPromises = cityInfo.searchTerms.map(term => 
-            graphqlRequest(GET_JOBS_BY_SEARCH, { searchTerm: term })
-          )
-          
-          const searchResults = await Promise.all(searchPromises)
-          searchResults.forEach(result => {
-            if (result?.posts?.nodes) {
-              allJobs = [...allJobs, ...result.posts.nodes]
+            allJobsData = acfResult.posts.nodes
+            console.log(`✅ Successfully fetched ${acfResult.posts.nodes.length} jobs with ACF fields`)
+            
+            // Log sample ACF structure for debugging
+            if (acfResult.posts.nodes.length > 0) {
+              const sampleJob = acfResult.posts.nodes[0]
+              const sampleACF = extractACFData(sampleJob)
+              console.log('📊 Sample ACF data structure:', {
+                directFields: {
+                  city: sampleJob.city,
+                  state: sampleJob.state,
+                  workMode: sampleJob.workMode,
+                  salaryMin: sampleJob.salaryMin,
+                  salaryMax: sampleJob.salaryMax,
+                  isUrgent: sampleJob.isUrgent,
+                  requiredSkills: sampleJob.requiredSkills,
+                  experienceLevel: sampleJob.experienceLevel
+                },
+                extractedACF: sampleACF
+              })
             }
-          })
-          console.log('✅ Search queries completed')
+          }
         } catch (err) {
-          console.warn('❌ Search fallback failed:', err.message)
+          console.warn('❌ Individual ACF fields query failed:', err.message)
+          
+          // Strategy 2: Fallback to simple query without ACF fields
+          try {
+            console.log('🔄 Fallback: Trying simple query without ACF fields...')
+            const simpleResult = await graphqlRequest(GET_JOBS_SIMPLE)
+            
+            if (simpleResult?.posts?.nodes) {
+              allJobsData = simpleResult.posts.nodes
+              console.log(`✅ Fallback successful: ${simpleResult.posts.nodes.length} jobs fetched`)
+            }
+          } catch (simpleErr) {
+            console.warn('❌ Simple query also failed:', simpleErr.message)
+          }
+        }
+        
+        // Strategy 3: Additional search-based queries if we have few results
+        if (allJobsData.length < 50) {
+          try {
+            console.log('🔍 Adding search-based results...')
+            for (const searchTerm of cityInfo.searchTerms.slice(0, 2)) {
+              const searchResult = await graphqlRequest(GET_JOBS_BY_SEARCH, {
+                searchTerm: searchTerm
+              })
+              
+              if (searchResult?.posts?.nodes) {
+                allJobsData = [...allJobsData, ...searchResult.posts.nodes]
+              }
+            }
+            console.log(`🔍 Search results added. Total: ${allJobsData.length}`)
+          } catch (searchErr) {
+            console.warn('❌ Search queries failed:', searchErr.message)
+          }
         }
         
         // Remove duplicates and sort
         const uniqueJobs = []
         const seenIds = new Set()
-        allJobs.forEach(job => {
+        allJobsData.forEach(job => {
           if (!seenIds.has(job.id)) {
             seenIds.add(job.id)
             uniqueJobs.push(job)
@@ -462,13 +437,13 @@ export default function LocationCityPage() {
         
         uniqueJobs.sort((a, b) => new Date(b.date) - new Date(a.date))
         
-        console.log('📊 Total unique jobs found:', uniqueJobs.length)
-        setJobs(uniqueJobs)
+        console.log(`📈 Final result: ${uniqueJobs.length} unique jobs`)
+        setAllJobs(uniqueJobs)
         
       } catch (err) {
-        console.error('💥 Error fetching city jobs:', err)
+        console.error('💥 Fatal error fetching jobs:', err)
         setError('Failed to load jobs for this city. Please try again.')
-        setJobs([])
+        setAllJobs([])
       } finally {
         setLoading(false)
       }
@@ -479,102 +454,104 @@ export default function LocationCityPage() {
 
   // Filter jobs based on city and additional filters
   useEffect(() => {
-    if (!jobs.length || !cityInfo) {
+    if (!allJobs.length || !cityInfo) {
       setFilteredJobs([])
       return
     }
 
     try {
-      // First filter by city using ACF data
-      let cityJobs = filterJobsByCity(jobs, cityInfo)
+      // Filter by city using enhanced ACF matching
+      let cityJobs = filterJobsByCity(allJobs, cityInfo)
+      console.log(`🏙️ City filtering: ${allJobs.length} → ${cityJobs.length} jobs for ${cityInfo.name}`)
+      
+      // Apply active filter (tabs)
+      if (activeFilter !== 'all') {
+        cityJobs = cityJobs.filter(job => {
+          try {
+            const acfData = extractACFData(job)
+            const title = (job.title || '').toLowerCase()
+            
+            switch(activeFilter) {
+              case 'urgent':
+                return acfData.isUrgent === true || 
+                       acfData.isUrgent === 'true' ||
+                       acfData.isUrgent === '1' || 
+                       acfData.isUrgent === 1 ||
+                       title.includes('urgent')
+              case 'remote':
+                const workMode = (acfData.workMode || '').toString().toLowerCase()
+                return workMode.includes('remote') || 
+                       title.includes('remote') || title.includes('wfh')
+              case 'fresher':
+                const experienceLevel = (acfData.experienceLevel || '').toString().toLowerCase()
+                return experienceLevel.includes('fresher') ||
+                       title.includes('fresher') || title.includes('trainee')
+              default:
+                return true
+            }
+          } catch {
+            return false
+          }
+        })
+      }
       
       // Apply additional filters
-      let filtered = cityJobs
-      
-      // Active filter (tabs)
-      if (activeFilter !== 'all') {
-        filtered = filtered.filter(job => {
-          const acfData = extractACFData(job)
-          const title = (job.title || '').toLowerCase()
-          
-          switch(activeFilter) {
-            case 'urgent':
-              return acfData.isUrgent === true || 
-                     acfData.isUrgent === '1' || 
-                     title.includes('urgent')
-            case 'remote':
-              return (acfData.workMode || '').toLowerCase().includes('remote') ||
-                     title.includes('remote')
-            case 'fresher':
-              return (acfData.experienceLevel || '').toLowerCase().includes('fresher') ||
-                     title.includes('fresher')
-            default:
-              return true
+      if (additionalFilters.experience !== 'all') {
+        cityJobs = cityJobs.filter(job => {
+          try {
+            const acfData = extractACFData(job)
+            const jobExperience = (acfData.experienceLevel || '').toString().toLowerCase()
+            const title = (job.title || '').toLowerCase()
+            
+            return jobExperience.includes(additionalFilters.experience.toLowerCase()) ||
+                   title.includes(additionalFilters.experience.toLowerCase())
+          } catch {
+            return false
           }
         })
       }
       
-      // Experience filter
-      if (filters.experience !== 'all') {
-        filtered = filtered.filter(job => {
-          const acfData = extractACFData(job)
-          const jobExperience = (acfData.experienceLevel || '').toLowerCase()
-          const title = (job.title || '').toLowerCase()
-          
-          return jobExperience.includes(filters.experience.toLowerCase()) ||
-                 title.includes(filters.experience.toLowerCase())
-        })
-      }
-      
-      // Work mode filter
-      if (filters.workMode !== 'all') {
-        filtered = filtered.filter(job => {
-          const acfData = extractACFData(job)
-          const jobWorkMode = (acfData.workMode || '').toLowerCase()
-          const title = (job.title || '').toLowerCase()
-          
-          return jobWorkMode.includes(filters.workMode.toLowerCase()) ||
-                 title.includes(filters.workMode.toLowerCase())
-        })
-      }
-      
-      // Salary filter
-      if (filters.salary !== 'all') {
-        filtered = filtered.filter(job => {
-          const acfData = extractACFData(job)
-          const salaryMin = parseInt(acfData.salaryMin) || 0
-          const title = (job.title || '').toLowerCase()
-          
-          switch(filters.salary) {
-            case '0-3': return salaryMin <= 3 || title.includes('fresher')
-            case '3-5': return (salaryMin >= 3 && salaryMin <= 5) || title.includes('junior')
-            case '5-8': return (salaryMin >= 5 && salaryMin <= 8) || title.includes('senior')
-            case '8+': return salaryMin >= 8 || title.includes('lead')
-            default: return true
+      if (additionalFilters.workMode !== 'all') {
+        cityJobs = cityJobs.filter(job => {
+          try {
+            const acfData = extractACFData(job)
+            const jobWorkMode = (acfData.workMode || '').toString().toLowerCase()
+            const title = (job.title || '').toLowerCase()
+            
+            return jobWorkMode.includes(additionalFilters.workMode.toLowerCase()) ||
+                   title.includes(additionalFilters.workMode.toLowerCase())
+          } catch {
+            return false
           }
         })
       }
       
-      // Urgent filter
-      if (filters.urgent) {
-        filtered = filtered.filter(job => {
-          const acfData = extractACFData(job)
-          const title = (job.title || '').toLowerCase()
-          
-          return acfData.isUrgent === true || 
-                 acfData.isUrgent === '1' || 
-                 title.includes('urgent')
+      if (additionalFilters.urgent) {
+        cityJobs = cityJobs.filter(job => {
+          try {
+            const acfData = extractACFData(job)
+            const title = (job.title || '').toLowerCase()
+            
+            return acfData.isUrgent === true || 
+                   acfData.isUrgent === 'true' ||
+                   acfData.isUrgent === '1' || 
+                   acfData.isUrgent === 1 ||
+                   title.includes('urgent')
+          } catch {
+            return false
+          }
         })
       }
       
-      setFilteredJobs(filtered)
+      setFilteredJobs(cityJobs)
       
     } catch (error) {
-      console.error('Error filtering jobs:', error)
+      console.error('Error applying filters:', error)
       setFilteredJobs([])
     }
-  }, [jobs, cityInfo, filters, activeFilter])
+  }, [allJobs, cityInfo, activeFilter, additionalFilters])
 
+  // Loading state
   if (!mounted) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -586,6 +563,7 @@ export default function LocationCityPage() {
     )
   }
 
+  // City not found
   if (!cityInfo) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -593,7 +571,7 @@ export default function LocationCityPage() {
           <h1 className="text-2xl font-bold mb-4">City Not Found</h1>
           <p className="text-gray-600 mb-4">The city you're looking for doesn't exist in our database.</p>
           <Link
-            href="/location"
+            href="/all-locations"
             className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
           >
             Browse All Cities
@@ -603,26 +581,11 @@ export default function LocationCityPage() {
     )
   }
 
-  const cityJobs = filterJobsByCity(jobs, cityInfo)
-  const stats = {
-    total: cityJobs.length,
-    urgent: cityJobs.filter(job => {
-      const acfData = extractACFData(job)
-      return acfData.isUrgent === true || (job.title || '').toLowerCase().includes('urgent')
-    }).length,
-    remote: cityJobs.filter(job => {
-      const acfData = extractACFData(job)
-      return (acfData.workMode || '').toLowerCase().includes('remote')
-    }).length,
-    fresher: cityJobs.filter(job => {
-      const acfData = extractACFData(job)
-      return (acfData.experienceLevel || '').toLowerCase().includes('fresher')
-    }).length
-  }
+  const stats = calculateStats(allJobs, cityInfo)
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* SEO Header */}
+      {/* Header Section */}
       <div className="mb-8">
         <div className="bg-gradient-primary text-white rounded-2xl p-8 mb-6">
           <div className="flex items-center gap-4">
@@ -665,7 +628,7 @@ export default function LocationCityPage() {
         <nav className="flex text-sm text-gray-600 mb-6">
           <Link href="/" className="hover:text-primary-600">Home</Link>
           <span className="mx-2">/</span>
-          <Link href="/location" className="hover:text-primary-600">All Cities</Link>
+          <Link href="/all-locations" className="hover:text-primary-600">All Cities</Link>
           <span className="mx-2">/</span>
           <span className="text-gray-800">{cityInfo.name} Jobs</span>
         </nav>
@@ -715,13 +678,13 @@ export default function LocationCityPage() {
             ))}
           </div>
 
-          {/* Advanced Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Additional Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
               <select
-                value={filters.experience}
-                onChange={(e) => setFilters(prev => ({ ...prev, experience: e.target.value }))}
+                value={additionalFilters.experience}
+                onChange={(e) => setAdditionalFilters(prev => ({ ...prev, experience: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               >
                 <option value="all">All Experience</option>
@@ -736,8 +699,8 @@ export default function LocationCityPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Work Mode</label>
               <select
-                value={filters.workMode}
-                onChange={(e) => setFilters(prev => ({ ...prev, workMode: e.target.value }))}
+                value={additionalFilters.workMode}
+                onChange={(e) => setAdditionalFilters(prev => ({ ...prev, workMode: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               >
                 <option value="all">All Work Modes</option>
@@ -747,24 +710,12 @@ export default function LocationCityPage() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Salary Range</label>
-              <select
-                value={filters.salary}
-                onChange={(e) => setFilters(prev => ({ ...prev, salary: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="all">All Salaries</option>
-                <option value="0-3">0-3 LPA</option>
-                <option value="3-5">3-5 LPA</option>
-                <option value="5-8">5-8 LPA</option>
-                <option value="8+">8+ LPA</option>
-              </select>
-            </div>
-
             <div className="flex items-end">
               <button
-                onClick={() => setFilters({ experience: 'all', salary: 'all', workMode: 'all', urgent: false })}
+                onClick={() => {
+                  setAdditionalFilters({ experience: 'all', workMode: 'all', urgent: false })
+                  setActiveFilter('all')
+                }}
                 className="w-full bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
               >
                 Clear Filters
@@ -835,7 +786,7 @@ export default function LocationCityPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={() => {
-                setFilters({ experience: 'all', salary: 'all', workMode: 'all', urgent: false })
+                setAdditionalFilters({ experience: 'all', workMode: 'all', urgent: false })
                 setActiveFilter('all')
               }}
               className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
@@ -881,20 +832,20 @@ export default function LocationCityPage() {
             <h3 className="text-lg font-semibold mb-4">Quick Job Search</h3>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { skill: 'React', count: Math.floor(stats.total * 0.3) },
-                { skill: 'Python', count: Math.floor(stats.total * 0.25) },
-                { skill: 'Java', count: Math.floor(stats.total * 0.2) },
-                { skill: 'Node.js', count: Math.floor(stats.total * 0.15) }
+                { skill: 'React', path: `/location/${citySlug}/skills/react` },
+                { skill: 'Python', path: `/location/${citySlug}/skills/python` },
+                { skill: 'Java', path: `/location/${citySlug}/skills/java` },
+                { skill: 'Node.js', path: `/location/${citySlug}/skills/nodejs` }
               ].map((item, index) => (
                 <Link
                   key={index}
-                  href={`/location/${citySlug}/skills/${item.skill.toLowerCase()}`}
+                  href={item.path}
                   className="group p-3 bg-gray-50 rounded-lg hover:bg-accent-50 transition-colors"
                 >
                   <div className="font-medium text-gray-800 group-hover:text-accent-600">
                     {item.skill} Jobs
                   </div>
-                  <div className="text-sm text-gray-500">{item.count}+ openings</div>
+                  <div className="text-sm text-gray-500">In {cityInfo.name}</div>
                 </Link>
               ))}
             </div>
@@ -1019,7 +970,7 @@ export default function LocationCityPage() {
                 Search All Jobs
               </Link>
               <Link
-                href="/location"
+                href="/all-locations"
                 className="border border-white text-white px-4 py-2 rounded-lg hover:bg-white hover:text-primary-600 transition-colors"
               >
                 Other Cities
@@ -1034,20 +985,65 @@ export default function LocationCityPage() {
         <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h3 className="font-bold mb-2 text-yellow-800">🔧 Debug Information</h3>
           <div className="text-sm text-yellow-700 space-y-1">
-            <p><strong>City:</strong> {cityInfo.name} (ACF: {cityInfo.acfValue})</p>
-            <p><strong>State:</strong> {cityInfo.state} (ACF: {cityInfo.stateAcfValue})</p>
-            <p><strong>Total jobs loaded:</strong> {jobs.length}</p>
-            <p><strong>City-filtered jobs:</strong> {cityJobs.length}</p>
+            <p><strong>City:</strong> {cityInfo.name}</p>
+            <p><strong>Expected ACF City Values:</strong> {cityInfo.acfCityValues.join(', ')}</p>
+            <p><strong>Expected ACF State Values:</strong> {cityInfo.acfStateValues.join(', ')}</p>
+            <p><strong>Total jobs loaded:</strong> {allJobs.length}</p>
+            <p><strong>City-filtered jobs:</strong> {stats.total}</p>
             <p><strong>Final filtered jobs:</strong> {filteredJobs.length}</p>
             <p><strong>Search terms:</strong> {cityInfo.searchTerms.join(', ')}</p>
             <p><strong>Active filter:</strong> {activeFilter}</p>
-            <p><strong>Filters:</strong> {JSON.stringify(filters)}</p>
+            <p><strong>Additional filters:</strong> {JSON.stringify(additionalFilters)}</p>
             
             {filteredJobs.length > 0 && (
               <details className="mt-4">
-                <summary className="cursor-pointer font-medium text-yellow-800">Sample ACF Data</summary>
-                <pre className="mt-2 p-3 bg-white rounded text-xs overflow-auto max-h-40">
-                  {JSON.stringify(extractACFData(filteredJobs[0]), null, 2)}
+                <summary className="cursor-pointer font-medium text-yellow-800">Sample Job with ACF Data</summary>
+                <pre className="mt-2 p-3 bg-white rounded text-xs overflow-auto max-h-60">
+                  {JSON.stringify({
+                    title: filteredJobs[0].title,
+                    directACFFields: {
+                      city: filteredJobs[0].city,
+                      state: filteredJobs[0].state,
+                      workMode: filteredJobs[0].workMode,
+                      salaryMin: filteredJobs[0].salaryMin,
+                      salaryMax: filteredJobs[0].salaryMax,
+                      isUrgent: filteredJobs[0].isUrgent,
+                      requiredSkills: filteredJobs[0].requiredSkills,
+                      experienceLevel: filteredJobs[0].experienceLevel
+                    },
+                    extractedACF: extractACFData(filteredJobs[0])
+                  }, null, 2)}
+                </pre>
+              </details>
+            )}
+            
+            {allJobs.length > 0 && (
+              <details className="mt-4">
+                <summary className="cursor-pointer font-medium text-yellow-800">GraphQL Response Structure</summary>
+                <pre className="mt-2 p-3 bg-white rounded text-xs overflow-auto max-h-60">
+                  {JSON.stringify({
+                    sampleJob: {
+                      id: allJobs[0].id,
+                      title: allJobs[0].title,
+                      city: allJobs[0].city,
+                      state: allJobs[0].state,
+                      workMode: allJobs[0].workMode,
+                      salaryMin: allJobs[0].salaryMin,
+                      salaryMax: allJobs[0].salaryMax,
+                      isUrgent: allJobs[0].isUrgent,
+                      requiredSkills: allJobs[0].requiredSkills,
+                      experienceLevel: allJobs[0].experienceLevel
+                    },
+                    fieldsAvailable: {
+                      hasCity: !!allJobs[0].city,
+                      hasState: !!allJobs[0].state,
+                      hasWorkMode: !!allJobs[0].workMode,
+                      hasSalaryMin: !!allJobs[0].salaryMin,
+                      hasIsUrgent: !!allJobs[0].isUrgent,
+                      hasRequiredSkills: !!allJobs[0].requiredSkills,
+                      hasExperienceLevel: !!allJobs[0].experienceLevel
+                    }
+                  }, null, 2)}
                 </pre>
               </details>
             )}

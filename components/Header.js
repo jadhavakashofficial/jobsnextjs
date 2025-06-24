@@ -28,7 +28,7 @@ export default function Header() {
     { name: 'Diploma', href: '/education/diploma' },
   ]
 
-  // New location-based navigation
+  // Updated location-based navigation
   const locations = [
     { name: 'Mumbai Jobs', href: '/location/mumbai' },
     { name: 'Delhi Jobs', href: '/location/delhi' },
@@ -37,7 +37,7 @@ export default function Header() {
     { name: 'Remote Jobs', href: '/location/remote' },
   ]
 
-  // New skill-based navigation
+  // Updated skill-based navigation
   const skills = [
     { name: 'React Jobs', href: '/skills/react' },
     { name: 'Python Jobs', href: '/skills/python' },
@@ -46,7 +46,7 @@ export default function Header() {
     { name: 'Node.js Jobs', href: '/skills/nodejs' },
   ]
 
-  // New salary-based navigation
+  // Updated salary-based navigation
   const salaryRanges = [
     { name: '0-3 LPA', href: '/salary/0-3-lpa' },
     { name: '3-5 LPA', href: '/salary/3-5-lpa' },
@@ -100,7 +100,7 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Location Dropdown */}
+            {/* Location Dropdown - UPDATED LINKS */}
             <div className="relative group">
               <button className="text-neutral-700 hover:text-primary-600 font-medium flex items-center">
                 By Location
@@ -120,7 +120,7 @@ export default function Header() {
                 ))}
                 <div className="border-t border-neutral-100 mt-2 pt-2">
                   <Link
-                    href="/location"
+                    href="/all-locations"
                     className="block px-4 py-2 text-primary-600 hover:bg-primary-50 transition-colors font-medium"
                   >
                     View All Cities →
@@ -129,7 +129,7 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Skills Dropdown */}
+            {/* Skills Dropdown - UPDATED LINKS */}
             <div className="relative group">
               <button className="text-neutral-700 hover:text-primary-600 font-medium flex items-center">
                 By Skills
@@ -149,7 +149,7 @@ export default function Header() {
                 ))}
                 <div className="border-t border-neutral-100 mt-2 pt-2">
                   <Link
-                    href="/skills"
+                    href="/all-skills"
                     className="block px-4 py-2 text-accent-600 hover:bg-accent-50 transition-colors font-medium"
                   >
                     View All Skills →
@@ -220,7 +220,7 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation - UPDATED LINKS */}
         {isOpen && (
           <div className="lg:hidden py-4 border-t border-neutral-200">
             <div className="space-y-4">
@@ -248,6 +248,13 @@ export default function Header() {
                     {location.name}
                   </Link>
                 ))}
+                <Link
+                  href="/all-locations"
+                  className="block py-1 pl-4 text-primary-600 hover:text-primary-700 transition-colors font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  View All Cities →
+                </Link>
               </div>
 
               <div>
@@ -262,6 +269,13 @@ export default function Header() {
                     {skill.name}
                   </Link>
                 ))}
+                <Link
+                  href="/all-skills"
+                  className="block py-1 pl-4 text-accent-600 hover:text-accent-700 transition-colors font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  View All Skills →
+                </Link>
               </div>
 
               <div>

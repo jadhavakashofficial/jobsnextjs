@@ -1,6 +1,8 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import Image from 'next/image'
 import { graphqlRequest } from '../../../lib/apollo'
 
 const GET_POST = `
@@ -60,16 +62,22 @@ export default function JobPage() {
   const { post } = data
 
   return (
-    <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <article className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Featured Image */}
       {post.featuredImage?.node?.sourceUrl && (
-        <img
-          src={post.featuredImage.node.sourceUrl}
-          alt={post.title}
-          className="w-full h-64 object-cover rounded-lg mb-8"
-        />
+        <div className="relative w-full h-64 md:h-96 mb-8 rounded-lg overflow-hidden">
+          <Image
+            src={post.featuredImage.node.sourceUrl}
+            alt={post.title}
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
       )}
 
-      <header className="mb-8">
+      {/* Post Header */}
+      <header className="mb-10">
         <div className="flex flex-wrap gap-2 mb-4">
           {post.categories?.nodes?.map((category) => (
             <span
@@ -81,24 +89,25 @@ export default function JobPage() {
           ))}
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">{post.title}</h1>
-        
-        <div className="flex items-center text-gray-600 text-sm">
-          <span>Posted: {new Date(post.date).toLocaleDateString()}</span>
+        <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">{post.title}</h1>
+
+        <div className="text-sm text-gray-500">
+          Posted on{' '}
+          <time dateTime={post.date}>{new Date(post.date).toLocaleDateString()}</time>
         </div>
       </header>
 
+      {/* Main Post Content */}
       <div
         className="prose prose-lg max-w-none"
         dangerouslySetInnerHTML={{ __html: post.content }}
       />
 
-      <div className="mt-12 p-8 bg-blue-50 rounded-lg text-center">
-        <h3 className="text-2xl font-bold mb-4">Ready to Apply?</h3>
-        <p className="text-gray-600 mb-6">
-          Don't miss this opportunity! Apply now and take the next step in your career.
-        </p>
-        <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+      {/* CTA Box */}
+      <div className="mt-16 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl p-8 shadow-lg text-center">
+        <h3 className="text-2xl md:text-3xl font-bold mb-2">Ready to Apply?</h3>
+        <p className="mb-6">Take the next step in your career today.</p>
+        <button className="bg-white text-blue-700 px-6 py-3 rounded-md font-semibold hover:bg-gray-100 transition">
           Apply Now
         </button>
       </div>

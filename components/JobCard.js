@@ -1,7 +1,30 @@
 import Link from 'next/link'
 
 export default function JobCard({ post }) {
-  const customFields = post.customFields || {}
+  // Parse custom fields from JSON string
+  const parseCustomFields = (customFieldsString) => {
+    if (!customFieldsString) return {}
+    
+    try {
+      // If it's already an object, return it
+      if (typeof customFieldsString === 'object') {
+        return customFieldsString
+      }
+      
+      // If it's a string, try to parse it as JSON
+      if (typeof customFieldsString === 'string') {
+        return JSON.parse(customFieldsString)
+      }
+      
+      return {}
+    } catch (error) {
+      console.warn('Failed to parse custom fields for post:', post.id, error)
+      return {}
+    }
+  }
+
+  // Get parsed custom fields
+  const customFields = parseCustomFields(post.customFields)
   
   // Helper function to format salary
   const formatSalary = (min, max) => {
@@ -24,7 +47,7 @@ export default function JobCard({ post }) {
   }
 
   // Helper function to check if job is urgent
-  const isUrgent = customFields.isUrgent === '1' || customFields.isUrgent === true
+  const isUrgent = customFields.isUrgent === '1' || customFields.isUrgent === true || customFields.isUrgent === 'true'
 
   // Helper function to check if deadline is approaching
   const isDeadlineApproaching = () => {
@@ -116,6 +139,16 @@ export default function JobCard({ post }) {
           )}
         </div>
 
+        {/* Company Size */}
+        {customFields.companySize && (
+          <div className="flex items-center gap-1 mb-3 text-sm text-neutral-600">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span>{customFields.companySize}</span>
+          </div>
+        )}
+
         {/* Salary Information */}
         {(customFields.salaryMin || customFields.salaryMax) && (
           <div className="mb-3">
@@ -189,6 +222,16 @@ export default function JobCard({ post }) {
               </span>
             </div>
           </div>
+        )}
+
+        {/* Debug info (remove in production) */}
+        {process.env.NODE_ENV === 'development' && (
+          <details className="mt-3 text-xs text-neutral-500">
+            <summary>Debug: Custom Fields</summary>
+            <pre className="mt-1 p-2 bg-neutral-50 rounded text-xs overflow-auto">
+              {JSON.stringify(customFields, null, 2)}
+            </pre>
+          </details>
         )}
       </div>
     </article>

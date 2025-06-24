@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { graphqlRequest } from '../../../lib/apollo'
+import { graphqlRequest, parseCustomFields, getUniqueValues, filterJobsBySalaryRange, getJobStats } from '../../../lib/apollo'
 import JobCard from '../../../components/JobCard'
 
 // Salary range mapping for SEO-friendly URLs
@@ -12,7 +12,7 @@ const salaryRangeMap = {
     name: '0-3 LPA', 
     description: 'Entry-level positions perfect for freshers and new graduates',
     icon: '🌱',
-    searchTerms: ['fresher', '0-3', 'entry level', 'graduate']
+    searchTerms: ['fresher', '0-3', 'entry level', 'graduate', 'trainee']
   },
   '3-5-lpa': { 
     min: 3, 
@@ -20,7 +20,7 @@ const salaryRangeMap = {
     name: '3-5 LPA', 
     description: 'Mid-level opportunities for professionals with 1-2 years experience',
     icon: '📈',
-    searchTerms: ['3-5', 'junior', '1-2 years', 'associate']
+    searchTerms: ['3-5', 'junior', '1-2 years', 'associate', 'mid-level']
   },
   '5-8-lpa': { 
     min: 5, 
@@ -28,7 +28,7 @@ const salaryRangeMap = {
     name: '5-8 LPA', 
     description: 'Senior positions for experienced professionals',
     icon: '💼',
-    searchTerms: ['5-8', 'senior', 'experienced', '3+ years']
+    searchTerms: ['5-8', 'senior', 'experienced', '3+ years', 'specialist']
   },
   '8-12-lpa': { 
     min: 8, 
@@ -36,7 +36,7 @@ const salaryRangeMap = {
     name: '8-12 LPA', 
     description: 'High-paying roles for senior developers and specialists',
     icon: '🚀',
-    searchTerms: ['8-12', 'lead', 'specialist', '5+ years']
+    searchTerms: ['8-12', 'lead', 'specialist', '5+ years', 'architect']
   },
   '12-plus-lpa': { 
     min: 12, 
@@ -44,12 +44,12 @@ const salaryRangeMap = {
     name: '12+ LPA', 
     description: 'Premium positions for team leads and architects',
     icon: '💎',
-    searchTerms: ['12+', 'architect', 'manager', 'principal']
+    searchTerms: ['12+', 'architect', 'manager', 'principal', 'director']
   }
 }
 
 const GET_ALL_JOBS_FOR_SALARY = `
-  query GetAllJobsForSalary($first: Int = 100) {
+  query GetAllJobsForSalary($first: Int = 200) {
     posts(first: $first, where: {orderby: {field: DATE, order: DESC}}) {
       nodes {
         id
@@ -75,6 +75,88 @@ const GET_ALL_JOBS_FOR_SALARY = `
   }
 `
 
+// Safe function to get unique values with proper error handling
+const getSafeUniqueValues = (jobs, field) => {
+  if (!jobs || !Array.isArray(jobs)) return []
+  
+  try {
+    const values = []
+    
+    jobs.forEach(job => {
+      try {
+        const customFields = parseCustomFields(job.customFields)
+        const value = customFields[field]
+        
+        if (value !== null && value !== undefined && value !== '') {
+          // Convert to string safely
+          let stringValue = ''
+          if (typeof value === 'string') {
+            stringValue = value.trim()
+          } else if (typeof value === 'number') {
+            stringValue = String(value)
+          } else if (typeof value === 'boolean') {
+            stringValue = String(value)
+          } else {
+            stringValue = String(value)
+          }
+          
+          if (stringValue && stringValue !== 'undefined' && stringValue !== 'null') {
+            values.push(stringValue)
+          }
+        }
+      } catch (error) {
+        console.warn(`Error processing job ${job.id} for field ${field}:`, error)
+      }
+    })
+    
+    // Remove duplicates and sort
+    const uniqueValues = [...new Set(values)]
+    return uniqueValues.sort()
+  } catch (error) {
+    console.warn('Error getting unique values:', error)
+    return []
+  }
+}
+
+// Enhanced filtering function for salary ranges
+const filterJobsBySalaryRangeEnhanced = (jobs, minSalary, maxSalary, searchTerms = []) => {
+  if (!jobs || !Array.isArray(jobs)) return []
+  
+  return jobs.filter(job => {
+    try {
+      const customFields = parseCustomFields(job.customFields)
+      
+      // Check explicit salary fields
+      const jobMinSalary = parseInt(customFields.salaryMin || customFields.salary_min || 0)
+      const jobMaxSalary = parseInt(customFields.salaryMax || customFields.salary_max || 999)
+      
+      // Check if job salary range overlaps with search range
+      const explicitSalaryMatch = (jobMinSalary >= minSalary && jobMinSalary <= maxSalary) ||
+                                 (jobMaxSalary >= minSalary && jobMaxSalary <= maxSalary) ||
+                                 (jobMinSalary <= minSalary && jobMaxSalary >= maxSalary)
+      
+      if (explicitSalaryMatch && (jobMinSalary > 0 || jobMaxSalary < 999)) {
+        return true
+      }
+      
+      // If no explicit salary data, check for keywords in title and excerpt
+      const titleLower = (job.title || '').toLowerCase()
+      const excerptLower = (job.excerpt || '').toLowerCase()
+      
+      // Check for search terms
+      const keywordMatch = searchTerms.some(term => 
+        titleLower.includes(term.toLowerCase()) || 
+        excerptLower.includes(term.toLowerCase())
+      )
+      
+      return keywordMatch
+    } catch (error) {
+      console.warn('Error filtering job by salary range:', error)
+      return false
+    }
+  })
+}
+
 export default function SalaryRangeJobsPage() {
   const params = useParams()
   const [loading, setLoading] = useState(true)
@@ -85,7 +167,8 @@ export default function SalaryRangeJobsPage() {
   const [filters, setFilters] = useState({
     location: 'all',
     experienceLevel: 'all',
-    skills: 'all'
+    skills: 'all',
+    workMode: 'all'
   })
 
   const rangeSlug = params?.range
@@ -109,15 +192,17 @@ export default function SalaryRangeJobsPage() {
         setLoading(true)
         setError(null)
         
-        // Get all jobs and filter client-side based on custom fields
         const result = await graphqlRequest(GET_ALL_JOBS_FOR_SALARY, { first: 200 })
         
         if (result?.posts?.nodes) {
           setAllJobs(result.posts.nodes)
+        } else {
+          setAllJobs([])
         }
       } catch (err) {
         console.error('Error fetching salary range jobs:', err)
         setError('Failed to load jobs for this salary range. Please try again.')
+        setAllJobs([])
       } finally {
         setLoading(false)
       }
@@ -133,89 +218,72 @@ export default function SalaryRangeJobsPage() {
       return
     }
 
-    let filtered = allJobs.filter(job => {
-      try {
-        const customFields = typeof job.customFields === 'string' 
-          ? JSON.parse(job.customFields) 
-          : job.customFields || {}
+    try {
+      // First filter by salary range
+      let filtered = filterJobsBySalaryRangeEnhanced(
+        allJobs, 
+        salaryInfo.min, 
+        salaryInfo.max, 
+        salaryInfo.searchTerms
+      )
 
-        const jobMinSalary = parseInt(customFields.salaryMin) || 0
-        const jobMaxSalary = parseInt(customFields.salaryMax) || 999
-
-        // Check if job salary range overlaps with our target range
-        const salaryMatch = (jobMinSalary >= salaryInfo.min && jobMinSalary <= salaryInfo.max) ||
-                           (jobMaxSalary >= salaryInfo.min && jobMaxSalary <= salaryInfo.max) ||
-                           (jobMinSalary <= salaryInfo.min && jobMaxSalary >= salaryInfo.max)
-
-        // Also check for keywords in title/content if no explicit salary data
-        const keywordMatch = !customFields.salaryMin && !customFields.salaryMax && 
-          salaryInfo.searchTerms.some(term => 
-            job.title.toLowerCase().includes(term.toLowerCase()) ||
-            job.excerpt?.toLowerCase().includes(term.toLowerCase())
-          )
-
-        return salaryMatch || keywordMatch
-      } catch {
-        return false
+      // Apply additional filters
+      if (filters.location !== 'all') {
+        filtered = filtered.filter(job => {
+          try {
+            const customFields = parseCustomFields(job.customFields)
+            const jobLocation = (customFields.city || '').toLowerCase()
+            return jobLocation.includes(filters.location.toLowerCase()) ||
+                   (job.title || '').toLowerCase().includes(filters.location.toLowerCase())
+          } catch { return false }
+        })
       }
-    })
 
-    // Apply additional filters
-    if (filters.location !== 'all') {
-      filtered = filtered.filter(job => {
-        try {
-          const customFields = typeof job.customFields === 'string' 
-            ? JSON.parse(job.customFields) 
-            : job.customFields || {}
-          return customFields.city?.toLowerCase().includes(filters.location.toLowerCase())
-        } catch { return false }
-      })
+      if (filters.experienceLevel !== 'all') {
+        filtered = filtered.filter(job => {
+          try {
+            const customFields = parseCustomFields(job.customFields)
+            const jobExperience = (customFields.experienceLevel || '').toLowerCase()
+            return jobExperience.includes(filters.experienceLevel.toLowerCase()) ||
+                   (job.title || '').toLowerCase().includes(filters.experienceLevel.toLowerCase())
+          } catch { return false }
+        })
+      }
+
+      if (filters.skills !== 'all') {
+        filtered = filtered.filter(job => {
+          try {
+            const customFields = parseCustomFields(job.customFields)
+            const jobSkills = (customFields.requiredSkills || customFields.skills || '').toLowerCase()
+            return jobSkills.includes(filters.skills.toLowerCase()) ||
+                   (job.title || '').toLowerCase().includes(filters.skills.toLowerCase())
+          } catch { return false }
+        })
+      }
+
+      if (filters.workMode !== 'all') {
+        filtered = filtered.filter(job => {
+          try {
+            const customFields = parseCustomFields(job.customFields)
+            const jobWorkMode = (customFields.workMode || '').toLowerCase()
+            return jobWorkMode.includes(filters.workMode.toLowerCase()) ||
+                   (job.title || '').toLowerCase().includes(filters.workMode.toLowerCase())
+          } catch { return false }
+        })
+      }
+
+      setFilteredJobs(filtered)
+    } catch (error) {
+      console.error('Error filtering jobs:', error)
+      setFilteredJobs([])
     }
-
-    if (filters.experienceLevel !== 'all') {
-      filtered = filtered.filter(job => {
-        try {
-          const customFields = typeof job.customFields === 'string' 
-            ? JSON.parse(job.customFields) 
-            : job.customFields || {}
-          return customFields.experienceLevel?.toLowerCase() === filters.experienceLevel.toLowerCase()
-        } catch { return false }
-      })
-    }
-
-    if (filters.skills !== 'all') {
-      filtered = filtered.filter(job => {
-        try {
-          const customFields = typeof job.customFields === 'string' 
-            ? JSON.parse(job.customFields) 
-            : job.customFields || {}
-          const jobSkills = customFields.requiredSkills || ''
-          return jobSkills.toLowerCase().includes(filters.skills.toLowerCase())
-        } catch { return false }
-      })
-    }
-
-    setFilteredJobs(filtered)
   }, [allJobs, salaryInfo, filters])
 
-  // Get unique values for filter options
-  const getUniqueValues = (field) => {
-    const values = allJobs
-      .map(job => {
-        try {
-          const customFields = typeof job.customFields === 'string' 
-            ? JSON.parse(job.customFields) 
-            : job.customFields || {}
-          return customFields[field]
-        } catch { return null }
-      })
-      .filter(value => value && value.trim())
-      .filter((value, index, self) => self.indexOf(value) === index)
-    return values.sort()
-  }
-
-  const uniqueLocations = getUniqueValues('city')
-  const popularSkills = ['React', 'JavaScript', 'Python', 'Java', 'Node.js', 'Angular']
+  // Get unique values for filter options with safe handling
+  const uniqueLocations = getSafeUniqueValues(allJobs, 'city').slice(0, 10)
+  const popularSkills = ['React', 'JavaScript', 'Python', 'Java', 'Node.js', 'Angular', 'PHP', 'MySQL']
+  const experienceLevels = ['Fresher', '0-1 years', '1-2 years', '2-3 years', '3+ years', '5+ years']
+  const workModes = ['Remote', 'Hybrid', 'On-site', 'Work from home']
 
   if (!mounted) {
     return (
@@ -275,7 +343,7 @@ export default function SalaryRangeJobsPage() {
           <span className="text-gray-800">{salaryInfo.name}</span>
         </nav>
 
-        {/* Salary Insights */}
+        {/* Quick Stats */}
         {!loading && filteredJobs.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-lg p-4 shadow-md text-center">
@@ -286,10 +354,9 @@ export default function SalaryRangeJobsPage() {
               <div className="text-2xl font-bold text-primary-600">
                 {filteredJobs.filter(job => {
                   try {
-                    const customFields = typeof job.customFields === 'string' 
-                      ? JSON.parse(job.customFields) 
-                      : job.customFields || {}
-                    return customFields.workMode === 'Remote'
+                    const customFields = parseCustomFields(job.customFields)
+                    return (customFields.workMode || '').toLowerCase().includes('remote') ||
+                           (job.title || '').toLowerCase().includes('remote')
                   } catch { return false }
                 }).length}
               </div>
@@ -299,10 +366,9 @@ export default function SalaryRangeJobsPage() {
               <div className="text-2xl font-bold text-accent-600">
                 {filteredJobs.filter(job => {
                   try {
-                    const customFields = typeof job.customFields === 'string' 
-                      ? JSON.parse(job.customFields) 
-                      : job.customFields || {}
-                    return customFields.isUrgent === '1' || customFields.isUrgent === true
+                    const customFields = parseCustomFields(job.customFields)
+                    return customFields.isUrgent === '1' || customFields.isUrgent === true ||
+                           (job.title || '').toLowerCase().includes('urgent')
                   } catch { return false }
                 }).length}
               </div>
@@ -321,7 +387,7 @@ export default function SalaryRangeJobsPage() {
         {!loading && allJobs.length > 0 && (
           <div className="bg-white rounded-lg p-6 shadow-md mb-6">
             <h3 className="text-lg font-semibold mb-4">Filter {salaryInfo.name} Jobs</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Location Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -333,7 +399,7 @@ export default function SalaryRangeJobsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-success-500 focus:border-success-500"
                 >
                   <option value="all">All Locations</option>
-                  {uniqueLocations.slice(0, 10).map(location => (
+                  {uniqueLocations.map(location => (
                     <option key={location} value={location}>{location}</option>
                   ))}
                 </select>
@@ -350,11 +416,9 @@ export default function SalaryRangeJobsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-success-500 focus:border-success-500"
                 >
                   <option value="all">All Experience Levels</option>
-                  <option value="Fresher">Fresher</option>
-                  <option value="0-1 years">0-1 years</option>
-                  <option value="1-2 years">1-2 years</option>
-                  <option value="2-3 years">2-3 years</option>
-                  <option value="3+ years">3+ years</option>
+                  {experienceLevels.map(level => (
+                    <option key={level} value={level}>{level}</option>
+                  ))}
                 </select>
               </div>
 
@@ -371,6 +435,23 @@ export default function SalaryRangeJobsPage() {
                   <option value="all">All Skills</option>
                   {popularSkills.map(skill => (
                     <option key={skill} value={skill}>{skill}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Work Mode Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Work Mode
+                </label>
+                <select
+                  value={filters.workMode}
+                  onChange={(e) => setFilters(prev => ({ ...prev, workMode: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-success-500 focus:border-success-500"
+                >
+                  <option value="all">All Work Modes</option>
+                  {workModes.map(mode => (
+                    <option key={mode} value={mode}>{mode}</option>
                   ))}
                 </select>
               </div>
@@ -443,7 +524,7 @@ export default function SalaryRangeJobsPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => setFilters({ location: 'all', experienceLevel: 'all', skills: 'all' })}
+              onClick={() => setFilters({ location: 'all', experienceLevel: 'all', skills: 'all', workMode: 'all' })}
               className="bg-success-600 text-white px-6 py-3 rounded-lg hover:bg-success-700 transition-colors"
             >
               Clear Filters
@@ -482,6 +563,17 @@ export default function SalaryRangeJobsPage() {
           ))}
         </div>
       </div>
+
+      {/* Debug Info (only in development) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-8 bg-gray-100 p-4 rounded-lg">
+          <h3 className="font-bold mb-2">Debug Info:</h3>
+          <p>Total jobs loaded: {allJobs.length}</p>
+          <p>Filtered jobs: {filteredJobs.length}</p>
+          <p>Unique locations found: {uniqueLocations.length}</p>
+          <p>Search terms for this range: {salaryInfo.searchTerms.join(', ')}</p>
+        </div>
+      )}
     </div>
   )
 }

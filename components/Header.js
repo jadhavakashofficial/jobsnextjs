@@ -1,40 +1,54 @@
+
 'use client'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SearchBox from './SearchBox'
+
+const DEFAULT_EDU = [
+  { name: 'BCA & BSC', slug: 'bca-bsc' },
+  { name: 'BE & BTech', slug: 'be-btech' },
+  { name: 'MCA & MSC', slug: 'mca-msc' },
+]
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
 
-  const categories = [
-    { name: 'IT Jobs', href: '/category/it-jobs' },
-    { name: 'Blogs', href: '/category/blogs' },
-    { name: 'MBA Jobs', href: '/category/mba-jobs' },
-  ]
+  const [education, setEducation] = useState(DEFAULT_EDU)
+
+  useEffect(() => {
+    async function loadCats() {
+      try {
+        const res = await fetch('/api/categories')
+        if (!res.ok) return
+        const data = await res.json()
+        const extra = data
+          .filter((c) => !DEFAULT_EDU.some((d) => d.slug === c.slug))
+          .map((c) => ({ name: c.name, slug: c.slug, count: c.count }))
+        setEducation([...DEFAULT_EDU, ...extra])
+      } catch (e) {
+        console.error('Failed to load categories', e)
+      }
+    }
+    loadCats()
+  }, [])
 
   const batches = [
-    { name: '2025 Batch', href: '/batch-wise/2025-batch' },
-    { name: '2024 Batch', href: '/batch-wise/2024-batch' },
-    { name: '2023 Batch', href: '/batch-wise/2023-batch' },
-    { name: '2022 Batch', href: '/batch-wise/2022-batch' },
+    { name: '2026 Batch', href: '/batch/2026' },
+    { name: '2025 Batch', href: '/batch/2025' },
+    { name: '2024 Batch', href: '/batch/2024' },
+    { name: '2023 Batch', href: '/batch/2023' },
+    { name: '2022 Batch', href: '/batch/2022' },
+    { name: '2021 Batch', href: '/batch/2021' },
   ]
 
-  const education = [
-    { name: 'BCA & BSC', href: '/education/bca-bsc' },
-    { name: 'BE & BTech', href: '/education/be-btech' },
-    { name: 'MCA & MSC', href: '/education/mca-msc' },
-    { name: 'MBA', href: '/education/mba' },
-    { name: 'BBA & BCom', href: '/education/bba-bcom' },
-    { name: 'Diploma', href: '/education/diploma' },
-  ]
-
-  // Updated location-based navigation
   const locations = [
-    { name: 'Mumbai Jobs', href: '/location/mumbai' },
-    { name: 'Delhi Jobs', href: '/location/delhi' },
-    { name: 'Bangalore Jobs', href: '/location/bangalore' },
-    { name: 'Pune Jobs', href: '/location/pune' },
-    { name: 'Remote Jobs', href: '/location/remote' },
+    { name: 'Bengaluru', href: '/location/bengaluru' },
+    { name: 'Pune', href: '/location/pune' },
+    { name: 'Hyderabad', href: '/location/hyderabad' },
+    { name: 'Delhi NCR', href: '/location/delhi-ncr' },
+    { name: 'Mumbai', href: '/location/mumbai' },
+    { name: 'Chennai', href: '/location/chennai' },
+    { name: 'Kolkata', href: '/location/kolkata' },
   ]
 
   // Updated skill-based navigation
@@ -79,22 +93,23 @@ export default function Header() {
               Home
             </Link>
             
-            {/* Categories Dropdown */}
+            {/* Jobs by Education */}
             <div className="relative group">
               <button className="text-neutral-700 hover:text-primary-600 font-medium flex items-center">
-                Categories
+                Jobs by Education
                 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                {categories.map((category) => (
+                {education.map((cat) => (
                   <Link
-                    key={category.name}
-                    href={category.href}
+                    key={cat.slug}
+                    href={`/category/${cat.slug}`}
                     className="block px-4 py-2 text-neutral-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                   >
-                    {category.name}
+                    {cat.name}
+                    {cat.count ? ` (${cat.count})` : ''}
                   </Link>
                 ))}
               </div>
@@ -179,22 +194,22 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Education Dropdown */}
+            {/* Batch Dropdown */}
             <div className="relative group">
               <button className="text-neutral-700 hover:text-primary-600 font-medium flex items-center">
-                Education
+                Jobs by Batch
                 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                {education.map((edu) => (
+                {batches.map((batch) => (
                   <Link
-                    key={edu.name}
-                    href={edu.href}
+                    key={batch.href}
+                    href={batch.href}
                     className="block px-4 py-2 text-neutral-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                   >
-                    {edu.name}
+                    {batch.name}
                   </Link>
                 ))}
               </div>
@@ -279,6 +294,34 @@ export default function Header() {
               </div>
 
               <div>
+                <p className="font-medium text-neutral-900 py-2">Jobs by Education</p>
+                {education.map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    href={`/category/${cat.slug}`}
+                    className="block py-1 pl-4 text-neutral-600 hover:text-primary-600 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+
+              <div>
+                <p className="font-medium text-neutral-900 py-2">Jobs by Batch</p>
+                {batches.map((batch) => (
+                  <Link
+                    key={batch.href}
+                    href={batch.href}
+                    className="block py-1 pl-4 text-neutral-600 hover:text-primary-600 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {batch.name}
+                  </Link>
+                ))}
+              </div>
+
+              <div>
                 <p className="font-medium text-neutral-900 py-2">By Salary</p>
                 {salaryRanges.slice(0, 3).map((range) => (
                   <Link
@@ -288,20 +331,6 @@ export default function Header() {
                     onClick={() => setIsOpen(false)}
                   >
                     {range.name}
-                  </Link>
-                ))}
-              </div>
-
-              <div>
-                <p className="font-medium text-neutral-900 py-2">Education</p>
-                {education.map((edu) => (
-                  <Link
-                    key={edu.name}
-                    href={edu.href}
-                    className="block py-1 pl-4 text-neutral-600 hover:text-primary-600 transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {edu.name}
                   </Link>
                 ))}
               </div>
